@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% set current_page = 'services' %}
+
+{% block title %}{{ data.i18n.nav.services|default('Services') }} | {{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}{% endblock %}
+{% block meta_description %}{% if data.services %}{% for u in data.services[:3] %}{{ u.title|default('') }}{% if not loop.last %}, {% endif %}{% endfor %}. {% endif %}{{ data.name|default('') }}, {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}.{% endblock %}
+
+{% block og_tags %}
+<meta property="og:title" content="{{ data.i18n.nav.services|default('Services') }} | {{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}">
+<meta property="og:description" content="{% if data.services %}{% for u in data.services[:3] %}{{ u.title|default('') }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}. {{ data.name|default('') }}.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ data.base_url|default('') }}/services.html">
+<meta property="og:image" content="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}">
+<meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
+{% endblock %}
+
+{% block canonical %}{{ data.base_url|default('') }}/services.html{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "{{ data.name_short|default(data.name|default('Business'))|json_val }}", "item": "{{ data.base_url|default('') }}/"},
+    {"@type": "ListItem", "position": 2, "name": "{{ data.i18n.nav.services|default('Services')|json_val }}", "item": "{{ data.base_url|default('') }}/services.html"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <h1>{{ data.i18n.our_services|default('Our services') }}</h1>
+  <p>{{ data.services_subtitle|default('') }}</p>
+</section>
+
+{% if data.services %}
+<section>
+  <div class="section-inner">
+    <div class="services-grid stagger-children">
+      {% for usluga in data.services %}
+      <div class="service-card fade-in">
+        <img data-fallback src="{{ usluga.image_url|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=600&q=80', true) }}" alt="{{ usluga.title|default('') }} - {{ data.name|default('') }}" loading="lazy" width="600" height="200">
+        <div class="service-card-body">
+          <h3>{{ usluga.title|default('') }}</h3>
+          <p>{{ usluga.description|default('') }}</p>
+          {% if usluga.price %}
+          <span class="service-price">{{ usluga.price }}</span>
+          {% else %}
+          <span class="service-price">{{ data.i18n.call_for_price|default('Call for price') }}</span>
+          {% endif %}
+          {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-primary">{{ data.i18n.book|default('Book') }}</a>{% else %}<a href="contact.html" class="btn-primary">{{ data.i18n.book|default('Book') }}</a>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="cta-banner">
+  <h2>{{ data.i18n.cta_not_sure|default('Not sure what you need?') }}</h2>
+  <p>{{ data.i18n.cta_not_sure_sub|default('{owner} will explain everything.')|replace('{owner}', data.owner_short|default('')) }}</p>
+  {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-white">{{ data.i18n.call|default('Call') }}: {{ data.phone_display|default(data.phone) }}</a>{% else %}<a href="contact.html" class="btn-white">{{ data.i18n.contact_us|default('Contact') }}</a>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% set current_page = 'contact' %}
+
+{% block title %}{{ data.i18n.nav.contact|default('Contact') }} | {{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}{% endblock %}
+
+{% block meta_description %}{{ data.i18n.book|default('Book') }}{% if data.name_locative %} - {{ data.name_locative }}{% elif data.name %} - {{ data.name }}{% endif %}. {{ data.address|default('') }}{% if data.address and data.district and data.district not in data.address %}, {{ data.district }}{% endif %}{% if data.address and data.city and data.city not in data.address %}, {{ data.city }}{% endif %}. {{ data.phone_display|default('') }}.{% endblock %}
+
+{% block og_tags %}
+<meta property="og:title" content="{{ data.i18n.nav.contact|default('Contact') }} | {{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}">
+<meta property="og:description" content="{{ data.i18n.book|default('Book') }}. {{ data.address|default('') }}, {{ data.city|default('') }}.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ data.base_url|default('') }}/contact.html">
+<meta property="og:image" content="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}">
+<meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
+{% endblock %}
+
+{% block canonical %}{{ data.base_url|default('') }}/contact.html{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "{{ data.name_short|default(data.name|default('Business'))|json_val }}", "item": "{{ data.base_url|default('') }}/"},
+    {"@type": "ListItem", "position": 2, "name": "{{ data.i18n.nav.contact|default('Contact')|json_val }}", "item": "{{ data.base_url|default('') }}/contact.html"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <h1>{{ data.i18n.nav.contact|default('Contact') }}</h1>
+  <p>{{ data.contact_subtitle|default('') }}</p>
+</section>
+
+<section>
+  <div class="section-inner">
+    <div class="contact-grid stagger-children">
+      {% if data.phone %}
+      <div class="contact-card fade-in">
+        <h3>{{ data.i18n.call_or_write|default('Call or message') }}</h3>
+        <a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="contact-link">{{ data.phone_display|default(data.phone) }}</a>
+        <a href="https://wa.me/{{ data.phone_prefix|default('+1')|replace('+','') }}{{ data.phone }}" target="_blank" rel="noopener noreferrer" class="contact-link">{{ data.i18n.whatsapp_label|default('WhatsApp') }}: {{ data.phone_display|default(data.phone) }}</a>
+        {% if data.email %}
+        <a href="mailto:{{ data.email }}" class="contact-link">Email: {{ data.email }}</a>
+        {% endif %}
+      </div>
+      {% elif data.email %}
+      <div class="contact-card fade-in">
+        <h3>{{ data.i18n.contact_us|default('Contact') }}</h3>
+        <a href="mailto:{{ data.email }}" class="contact-link">Email: {{ data.email }}</a>
+      </div>
+      {% endif %}
+
+      {% if data.facebook or data.instagram %}
+      <div class="contact-card fade-in">
+        <h3>{{ data.i18n.follow_us|default('Follow us') }}</h3>
+        {% if data.facebook %}
+        <a href="{{ data.facebook }}" target="_blank" rel="noopener noreferrer" class="contact-link">Facebook</a>
+        {% endif %}
+        {% if data.instagram %}
+        <a href="{{ data.instagram }}" target="_blank" rel="noopener noreferrer" class="contact-link">Instagram</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if data.address %}
+      <div class="contact-card fade-in">
+        <h3>{{ data.i18n.visit_us|default('Visit us') }}</h3>
+        <p>{{ data.address }}{% if data.district and data.district not in data.address %}, {{ data.district }}{% endif %}{% if data.city and data.city not in data.address %}, {{ data.city }}{% endif %}</p>
+        {% if data.google_maps_url %}
+        <a href="{{ data.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="margin-top:8px">{{ data.i18n.view_on_map|default('View on map') }}</a>
+        {% else %}
+        <a href="https://www.google.com/maps/search/{{ (data.name|default('') ~ ' ' ~ data.city|default(''))|urlencode }}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="margin-top:8px">{{ data.i18n.view_on_map|default('View on map') }}</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if data.hours %}
+      <div class="contact-card fade-in">
+        <h3>{{ data.i18n.working_hours|default('Working hours') }}</h3>
+        <table class="hours-table">
+          {% for h in data.hours %}
+          <tr>
+            <td>{{ h.day|default('') }}</td>
+            <td>{{ h.time|default('') }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
+
+      {% if data.phone %}
+      <div class="contact-card fade-in">
+        <h3>{{ data.i18n.quick_response|default('Quick response') }}</h3>
+        <p>{{ data.i18n.quick_response_text|default('WhatsApp or call. We respond during business hours.') }}</p>
+        <a href="https://wa.me/{{ data.phone_prefix|default('+1')|replace('+','') }}{{ data.phone }}" target="_blank" rel="noopener noreferrer" class="btn-accent" style="margin-top:8px">{{ data.i18n.write_on_whatsapp|default('Message on WhatsApp') }}</a>
+      </div>
+      {% endif %}
+
+      {% if data.formspree_id %}
+      <div class="contact-card contact-card--form fade-in" style="grid-column: 1 / -1">
+        <h3>{{ data.i18n.describe_more|default('Send us a message') }}</h3>
+        <form action="https://formspree.io/f/{{ data.formspree_id }}" method="POST" class="contact-form">
+          <input type="text" name="name" placeholder="{{ data.i18n.client|default('Name') }}" required>
+          <input type="email" name="email" placeholder="Email" required>
+          <input type="tel" name="phone" placeholder="{{ data.i18n.call|default('Phone') }}">
+          <textarea name="message" rows="4" placeholder="{{ data.i18n.describe_more|default('How can we help?') }}" required></textarea>
+          <input type="hidden" name="_subject" value="{{ data.i18n.cta_free_quote|default('New inquiry') }} - {{ data.name|default('') }}">
+          <input type="hidden" name="_next" value="{{ data.base_url|default('') }}/contact.html?sent=1">
+          <button type="submit" class="btn-primary">{{ data.i18n.cta_free_quote|default('Send') }}</button>
+        </form>
+        <div id="formSuccess" style="display:none;padding:16px;background:var(--bg-soft);border-radius:var(--card-radius);text-align:center;margin-top:12px">
+          <strong>&#10003;</strong> {{ data.i18n.cta_fast_response|default('Message sent. We will get back to you soon.') }}
+        </div>
+        <script>if(location.search.includes('sent=1')){document.getElementById('formSuccess').style.display='block';document.querySelector('.contact-form').style.display='none'}</script>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% if data.google_maps_embed_url %}
+<section class="map-section">
+  <iframe src="{{ data.google_maps_embed_url }}" width="100%" height="400" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ data.name_short|default(data.name|default('')) }}"></iframe>
+</section>
+{% endif %}
+
+<section class="cta-banner">
+  <h2>{{ data.i18n.cta_ready|default('Ready to book?') }}</h2>
+  <p>{{ data.i18n.cta_fast_response|default('We respond quickly and schedule at the earliest time.') }}</p>
+  {% if data.phone %}
+  <a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-white">{{ data.i18n.call|default('Call') }}: {{ data.phone_display|default(data.phone) }}</a>
+  <a href="https://wa.me/{{ data.phone_prefix|default('+1')|replace('+','') }}{{ data.phone }}" target="_blank" rel="noopener noreferrer" class="btn-white">{{ data.i18n.whatsapp_label|default('WhatsApp') }}</a>
+  {% else %}
+  {% if data.google_maps_url %}<a href="{{ data.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn-white">{{ data.i18n.view_on_map|default('View on map') }}</a>{% endif %}
+  {% endif %}
+</section>
+{% endblock %}

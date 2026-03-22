@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% set current_page = 'index' %}
+
+{% block title %}{{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}{% if data.specialization %} - {{ data.specialization }}{% endif %} | {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}{% endblock %}
+{% block meta_description %}{{ data.name|default('') }}{% if data.district %} - {{ data.district }}, {{ data.city|default('') }}{% else %} - {{ data.city|default('') }}{% endif %}. {% if data.specialization %}{{ data.specialization }}. {% endif %}{{ data.i18n.google_rating|default('Google rating') }} {{ data.rating|default(0) }} - {{ data.review_count|default(0) }} {{ data.i18n.reviews_on_google|default('reviews on Google') }}.{% endblock %}
+
+{% block og_tags %}
+<meta property="og:title" content="{{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }} | {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}">
+<meta property="og:description" content="{% if data.specialization %}{{ data.specialization }}. {% endif %}{{ data.i18n.google_rating|default('Google rating') }} {{ data.rating|default(0) }} - {{ data.review_count|default(0) }} {{ data.i18n.satisfied_clients|default('satisfied clients') }}.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ data.base_url|default('') }}/">
+<meta property="og:image" content="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}">
+<meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
+{% endblock %}
+
+{% block canonical %}{{ data.base_url|default('') }}/{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "{{ data.schema_type|default('LocalBusiness') }}",
+  "name": "{{ data.name|default('')|json_val }}",
+  "image": "{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{ data.address|default('')|json_val }}",
+    "addressLocality": "{{ data.city|default('')|json_val }}",
+    "addressCountry": "{{ data.country_code|default('US') }}"
+  }{% if data.phone %},
+  "telephone": "{{ data.phone_prefix|default('+1') }}{{ data.phone }}"{% endif %},
+  "url": "{{ data.base_url|default('') }}/"{% if data.rating %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ data.rating }}",
+    "reviewCount": "{{ data.review_count|default(0) }}",
+    "bestRating": "5"
+  }{% endif %}{% if data.google_maps_url %},
+  "hasMap": "{{ data.google_maps_url }}"{% endif %},
+  "priceRange": "$$",
+  "areaServed": {
+    "@type": "City",
+    "name": "{{ data.city|default('')|json_val }}"
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">
+        <strong>&#9733; {{ data.rating|default(0) }}</strong> {{ data.review_count|default(0) }} {{ data.i18n.reviews_on_google|default('reviews on Google') }}{% if data.years_established %} &middot; {{ data.years_established }}+ {{ data.i18n.years_label|default('years') }}{% endif %}
+      </div>
+      <h1>{{ data.hero_headline|default(data.i18n.hero_fallback_title|default('Your trusted local business')) }}</h1>
+      <p>{{ data.hero_subtitle|default(data.i18n.hero_fallback_subtitle|default('Book an appointment today.')) }}</p>
+      {% if data.about_blockquote %}<blockquote class="hero-quote">"{{ data.about_blockquote }}"</blockquote>{% endif %}
+      <div class="hero-buttons">
+        {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-primary">{{ data.i18n.call|default('Call') }}: {{ data.phone_display|default(data.phone) }}</a>{% else %}<a href="contact.html" class="btn-primary">{{ data.i18n.contact_us|default('Contact') }}</a>{% endif %}
+        {% if data.problems %}<a href="#diagnostics" class="btn-secondary">{{ data.i18n.problem_title|default("What's happening?") }}</a>{% endif %}
+      </div>
+    </div>
+    <div class="hero-image">
+      <img data-fallback src="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=800&q=80', true) }}" alt="{{ data.name|default('Servis') }} - {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}" loading="eager" fetchpriority="high" width="800" height="600">
+      <div class="hero-image-badge">
+        <span class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span> {{ data.rating|default(0) }}/5
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if data.problems %}
+<section id="diagnostics">
+  <div class="section-inner fade-in">
+    <span class="section-label">{{ data.i18n.problem_section_label|default('Diagnostics') }}</span>
+    <div class="diagnostician">
+      <h2>{{ data.i18n.problem_title|default("What's happening?") }}</h2>
+      <p>{{ data.i18n.problem_subtitle|default('Choose a problem and find out what you need before you call.') }}</p>
+      <div class="symptom-grid" id="symptomGrid">
+        {% for simptom in data.problems %}
+        <button class="symptom-btn" data-symptom="{{ loop.index0 }}">{{ simptom.title|default('Problem') }}</button>
+        {% endfor %}
+      </div>
+      {% for simptom in data.problems %}
+      {% set parent_idx = loop.index0 %}
+      <div class="symptom-result" id="result-{{ loop.index0 }}">
+        <h3>{{ simptom.treatment|default(data.i18n.diagnostics|default('Diagnostics')) }}</h3>
+        <div class="estimate-box">
+          <div class="estimate-price">{{ simptom.price if simptom.price else data.i18n.call_for_price|default('Call for price') }}</div>
+          <div class="estimate-details">
+            <span>{{ data.i18n.duration|default('Duration') }}: {{ simptom.duration|default(data.i18n.depends|default('Depends')) }}</span>
+            <span>{{ data.i18n.recovery|default('Recovery') }}: {{ simptom.recovery|default(data.i18n.depends|default('Depends')) }}</span>
+          </div>
+        </div>
+        <div class="result-cta">
+          {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-primary">{{ data.i18n.cta_free_quote|default('Get a free quote') }}</a>
+          <a href="https://wa.me/{{ data.phone_prefix|default('+1')|replace('+','') }}{{ data.phone }}" target="_blank" rel="noopener noreferrer" class="btn-accent">{{ data.i18n.whatsapp_label|default('WhatsApp') }}</a>{% else %}<a href="contact.html" class="btn-primary">{{ data.i18n.book|default('Book') }}</a>{% endif %}
+        </div>
+        <p>{{ simptom.description|default('') }}</p>
+        {% if simptom.subquestions %}
+        <p class="followup-prompt">{{ data.i18n.describe_more|default('Can you describe in more detail?') }}</p>
+        <div class="followup-grid">
+          {% for pp in simptom.subquestions %}
+          <button class="followup-btn" data-parent="{{ parent_idx }}" data-followup="{{ loop.index0 }}">{{ pp.question|default('') }}</button>
+          {% endfor %}
+        </div>
+        {% for pp in simptom.subquestions %}
+        <div class="followup-detail" id="followup-{{ parent_idx }}-{{ loop.index0 }}">{{ pp.answer|default('') }}</div>
+        {% endfor %}
+        {% endif %}
+        {% if simptom.recenzija %}
+        <div class="review-quote">
+          "{{ simptom.recenzija.text|default('') }}"
+          <span>- {{ simptom.recenzija.reviewer_name|default(data.i18n.client|default('Client')) }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if data.benefits %}
+<section>
+  <div class="section-inner">
+    <span class="section-label fade-in">{{ data.i18n.why_clients_choose_us|default('Why clients choose us') }}</span>
+    <h2 class="section-title fade-in">{{ data.benefits_headline|default(data.i18n.why_clients_choose_us|default('Why clients choose us')) }}</h2>
+    {% if data.benefits_subtitle %}<p class="section-subtitle fade-in">{{ data.benefits_subtitle }}</p>{% endif %}
+    <div class="benefits-grid stagger-children">
+      {% for benefit in data.benefits %}
+      <div class="benefit-card fade-in">
+        {% if benefit.image_url %}<img data-fallback src="{{ benefit.image_url }}" alt="{{ benefit.title|default('') }} - {{ data.name|default('') }}" loading="lazy" width="600" height="220">{% endif %}
+        <div class="benefit-card-body">
+          <h3>{{ benefit.title|default('') }}</h3>
+          <p>{{ benefit.description|default('') }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="process-section">
+  <div class="section-inner">
+    <span class="section-label fade-in">{{ data.i18n.process_section_label|default('Our process') }}</span>
+    <h2 class="section-title fade-in">{{ data.i18n.process_title|default('Three steps to a solution') }}</h2>
+    <div class="process-grid stagger-children" style="margin-top:48px">
+      <div class="process-step fade-in">
+        <div class="process-number">1</div>
+        <h3>{{ data.i18n.process_step1_title|default('Call') }}</h3>
+        <p>{{ data.i18n.process_step1_text|default('Book an appointment by calling {phone} or via WhatsApp.')|replace('{phone}', data.phone_display|default('')) }}</p>
+      </div>
+      <div class="process-step fade-in">
+        <div class="process-number">2</div>
+        <h3>{{ data.i18n.process_step2_title|default('Review') }}</h3>
+        <p>{{ data.i18n.process_step2_text|default('{owner} reviews and gives a diagnosis, no obligation.')|replace('{owner}', data.owner_short|default('')) }}</p>
+      </div>
+      <div class="process-step fade-in">
+        <div class="process-number">3</div>
+        <h3>{{ data.i18n.process_step3_title|default('Result') }}</h3>
+        <p>{{ data.i18n.process_step3_text|default('Fast repair with warranty. As {count} satisfied clients confirm.')|replace('{count}', data.review_count|default(0)|string) }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-gradient">
+  <div class="section-inner">
+    <div class="stats-grid fade-in">
+      <div class="stat-item">
+        <span class="counter-value" data-target="{{ data.rating|default(0) }}">{{ data.rating|default(0) }}</span>
+        <p>{{ data.i18n.google_rating|default('Google rating') }}</p>
+      </div>
+      <div class="stat-item">
+        <span class="counter-value" data-target="{{ data.review_count|default(0) }}">{{ data.review_count|default(0) }}</span>
+        <p>{{ data.i18n.reviews_label|default('Reviews') }}</p>
+      </div>
+      {% if data.years_established %}
+      <div class="stat-item">
+        <span class="counter-value" data-target="{{ data.years_established }}">{{ data.years_established }}</span><span class="stat-suffix">+</span>
+        <p>{{ data.i18n.years_experience|default('Years of experience') }}</p>
+      </div>
+      {% endif %}
+      {% if data.services %}
+      <div class="stat-item">
+        <span class="counter-value" data-target="{{ data.services|length }}">{{ data.services|length }}</span>
+        <p>{{ data.i18n.service_types|default('Service types') }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% if data.reviews %}
+<section>
+  <div class="section-inner">
+    <span class="section-label fade-in">{{ data.i18n.what_clients_say|default('What clients say') }}</span>
+    <h2 class="section-title fade-in">{{ data.review_count|default('') }} {{ data.i18n.cant_be_wrong|default("clients can't be wrong") }}</h2>
+    <div class="reviews-scroll" style="margin-top:40px">
+      {% for recenzija in data.reviews[:6] %}
+      <div class="review-card">
+        <div class="review-stars">{% for i in range(recenzija.rating|default(5)|int) %}&#9733;{% endfor %}</div>
+        <p class="review-text">"{{ recenzija.text|default('') }}"</p>
+        <div class="review-author">{{ recenzija.reviewer_name|default(data.i18n.client|default('Client')) }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if data.google_maps_url %}
+    <div style="text-align:center;margin-top:32px" class="fade-in">
+      <a href="{{ data.google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn-secondary">{{ data.i18n.read_all_reviews|default('Read all reviews') }}</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if data.faq %}
+<section class="faq-section">
+  <div class="section-inner">
+    <span class="section-label fade-in">{{ data.i18n.faq_label|default('FAQ') }}</span>
+    <h2 class="section-title fade-in">{{ data.i18n.faq_title|default('Everything you want to know') }}</h2>
+    <div class="faq-list">
+      {% for faq in data.faq %}
+      <div class="faq-item fade-in">
+        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+          {{ faq.question|default('') }}
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-answer"><div class="faq-answer-inner">{{ faq.answer|default('') }}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="cta-banner">
+  <h2>{{ data.i18n.cta_ready_services|default('Ready to book a service?') }}</h2>
+  <p>{{ data.i18n.cta_no_obligation|default('Call and book an appointment. No obligation.') }}</p>
+  {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-white">{{ data.i18n.call|default('Call') }}: {{ data.phone_display|default(data.phone) }}</a>{% else %}<a href="contact.html" class="btn-white">{{ data.i18n.contact_us|default('Contact') }}</a>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% set current_page = 'about' %}
+
+{% block title %}{{ data.i18n.nav.about|default('About') }} | {{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}{% endblock %}
+
+{% block meta_description %}{{ data.about_subtitle|default('') }} {{ data.name_genitive|default(data.name|default('')) }}. {{ data.owner|default('') }}{% if data.specialization %}, {{ data.specialization|lower }}{% endif %}. {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}.{% endblock %}
+
+{% block og_tags %}
+<meta property="og:title" content="{{ data.i18n.nav.about|default('About') }} | {{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}">
+<meta property="og:description" content="{{ data.about_subtitle|default('') }} {{ data.name_genitive|default(data.name|default('')) }}.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ data.base_url|default('') }}/about.html">
+<meta property="og:image" content="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}">
+<meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
+{% endblock %}
+
+{% block canonical %}{{ data.base_url|default('') }}/about.html{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "{{ data.name_short|default(data.name|default('Business'))|json_val }}", "item": "{{ data.base_url|default('') }}/"},
+    {"@type": "ListItem", "position": 2, "name": "{{ data.i18n.nav.about|default('About')|json_val }}", "item": "{{ data.base_url|default('') }}/about.html"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <h1>{{ data.about_headline|default(data.i18n.nav.about|default('About')) }}</h1>
+  <p>{{ data.about_subtitle|default('') }}</p>
+</section>
+
+{% if data.about_stats %}
+<section style="background:var(--dark);color:white;padding:48px 24px">
+  <div class="section-inner" style="padding:0">
+    <div class="stats-grid fade-in">
+      {% for stat in data.about_stats %}
+      <div class="stat-item" style="color:white">
+        <span class="counter-value" data-target="{{ stat.value|default(0) }}" style="color:white">{{ stat.value|default(0) }}</span>
+        <p style="color:rgba(255,255,255,.7)">{{ stat.label|default('') }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if data.about_story or data.about_paragraphs %}
+<section>
+  <div class="section-inner">
+    <div class="about-split fade-in">
+      <div class="about-image">
+        <img data-fallback="mechanic" src="{{ data.about_image|default(data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=600&q=80', true), true) }}" alt="{{ data.owner|default('') }}" loading="lazy" width="450" height="600">
+      </div>
+      <div class="about-text">
+        <span class="section-label">{{ data.i18n.our_story|default('Our story') }}</span>
+        {% if data.review_count %}
+        <h2 class="about-heading">{{ data.i18n.about_from_garage|default('From garage to {count} reviews')|replace('{count}', data.review_count|string) }}</h2>
+        {% else %}
+        <h2 class="about-heading">{{ data.i18n.our_story|default('Our story') }}</h2>
+        {% endif %}
+        {% if data.about_paragraphs %}
+          {% for para in data.about_paragraphs %}
+          <p class="about-paragraph">{{ para }}</p>
+          {% endfor %}
+        {% else %}
+        <p class="about-paragraph">{{ data.about_story }}</p>
+        {% endif %}
+
+        {% if data.about_blockquote %}
+        <blockquote class="about-quote">
+          {{ data.about_blockquote }}
+        </blockquote>
+        {% endif %}
+
+        {% if data.rating %}
+        <p class="about-paragraph">{{ data.i18n.about_reviews_text|default('Today {count} clients rate us {rating} on Google.')|replace('{count}', data.review_count|default(0)|string)|replace('{rating}', data.rating|string) }}</p>
+        {% endif %}
+
+        {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-primary" style="margin-top:24px">{{ data.i18n.cta_no_obligation|default('Call and book an appointment. No obligation.') }}</a>{% else %}<a href="contact.html" class="btn-primary" style="margin-top:24px">{{ data.i18n.book|default('Book') }}</a>{% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if data['core_values'] %}
+<section style="background:var(--bg-soft)">
+  <div class="section-inner">
+    <span class="section-label" style="text-align:center;display:block">{{ data.i18n.our_values|default('Our values') }}</span>
+    <h2 class="values-heading">{{ data.i18n.how_we_work|default('How we work') }}</h2>
+    <p style="text-align:center;color:var(--text-light);max-width:500px;margin:0 auto 48px">{{ data.i18n.how_we_work_subtitle|default('Three things we never compromise on.') }}</p>
+    <div class="values-grid stagger-children">
+      {% for vrednost in data['core_values'] %}
+      <div class="value-card fade-in">
+        <div class="value-icon">
+          {% if vrednost.ikona == 'heart' %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          {% elif vrednost.ikona == 'clock' %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          {% elif vrednost.ikona == 'check' %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          {% elif vrednost.ikona == 'shield' %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          {% else %}
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          {% endif %}
+        </div>
+        <h3>{{ vrednost.title|default('') }}</h3>
+        <p>{{ vrednost.description|default('') }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="cta-banner">
+  <h2>{{ data.i18n.cta_meet_team|default('Come and meet the team') }}</h2>
+  <p>{{ data.i18n.cta_meet_team_sub|default('Book an appointment and see for yourself.') }}</p>
+  {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-white">{{ data.i18n.call|default('Call') }}: {{ data.phone_display|default(data.phone) }}</a>{% else %}<a href="contact.html" class="btn-white">{{ data.i18n.contact_us|default('Contact') }}</a>{% endif %}
+</section>
+{% endblock %}

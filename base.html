@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="{{ data.i18n.lang|default('en') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ data.name|default(data.i18n.hero_fallback_title|default('Business')) }}{% endblock %}</title>
+<meta name="description" content="{% block meta_description %}{{ data.name|default('') }}{% endblock %}">
+{% block og_tags %}
+<meta property="og:type" content="website">
+<meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
+{% endblock %}
+{% block meta_extra %}{% endblock %}
+<link rel="canonical" href="{% block canonical %}{{ data.base_url|default('') }}/{% endblock %}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='{{ data.theme.favicon_fill|default('%231B2A4A') }}'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='55' font-family='sans-serif'>{{ (data.name|default('S'))[0] }}</text></svg>">
+<link rel="preconnect" href="https://images.unsplash.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="{{ data.theme.font_url|default('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Source+Sans+3:wght@400;600;700&display=swap') }}" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+{% if data.theme %}<style>:root{--primary:{{ data.theme.primary|default('#1B2A4A') }};--primary-light:{{ data.theme.primary_light|default('#2d4373') }};--accent:{{ data.theme.accent|default('#4A90A4') }};--accent-light:{{ data.theme.accent_light|default('#5fb3c9') }};--dark:{{ data.theme.dark|default('#0f1923') }};--bg-soft:{{ data.theme.bg_soft|default('#f3f5f8') }};--bg-alt:{{ data.theme.bg_alt|default('#e8ecf2') }};--primary-rgb:{{ data.theme.primary_rgb|default('27,42,74') }};--accent-rgb:{{ data.theme.accent_rgb|default('74,144,164') }};--card-radius:{{ data.theme.card_radius|default('16px') }};--btn-radius:{{ data.theme.btn_radius|default('10px') }};--font-body:{{ data.theme.font_body|default("'Source Sans 3',sans-serif") }};--font-display:{{ data.theme.font_display|default("'Libre Baskerville',serif") }}}</style>{% endif %}
+{% block head_extra %}{% endblock %}
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">{{ data.i18n.skip_to_content|default('Skip to content') }}</a>
+
+<header class="header" id="header">
+  <a href="index.html" class="logo">{{ data.name_short|default(data.name|default(data.i18n.hero_fallback_title|default('Business'))) }}</a>
+  <nav class="nav" aria-label="{{ data.i18n.nav_aria|default('Main navigation') }}">
+    <a href="index.html"{% if current_page == 'index' %} aria-current="page"{% endif %}>{{ data.i18n.nav.home|default('Home') }}</a>
+    <a href="services.html"{% if current_page == 'services' %} aria-current="page"{% endif %}>{{ data.i18n.nav.services|default('Services') }}</a>
+    <a href="about.html"{% if current_page == 'about' %} aria-current="page"{% endif %}>{{ data.i18n.nav.about|default('About') }}</a>
+    <a href="contact.html"{% if current_page == 'contact' %} aria-current="page"{% endif %}>{{ data.i18n.nav.contact|default('Contact') }}</a>
+    {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="nav-cta">{{ data.i18n.cta_call|default('Call us') }}</a>{% else %}<a href="contact.html" class="nav-cta">{{ data.i18n.nav.contact|default('Contact') }}</a>{% endif %}
+  </nav>
+  <button class="hamburger" onclick="toggleMenu()" aria-label="{{ data.i18n.menu_aria|default('Menu') }}" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<nav class="mobile-menu" id="mobileMenu" aria-label="{{ data.i18n.mobile_nav_aria|default('Mobile navigation') }}">
+  {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="nav-cta">{{ data.i18n.cta_call|default('Call us') }}: {{ data.phone_display|default(data.phone) }}</a>{% else %}<a href="contact.html" class="nav-cta">{{ data.i18n.nav.contact|default('Contact') }}</a>{% endif %}
+  <a href="index.html"{% if current_page == 'index' %} aria-current="page"{% endif %}>{{ data.i18n.nav.home|default('Home') }}</a>
+  <a href="services.html"{% if current_page == 'services' %} aria-current="page"{% endif %}>{{ data.i18n.nav.services|default('Services') }}</a>
+  <a href="about.html"{% if current_page == 'about' %} aria-current="page"{% endif %}>{{ data.i18n.nav.about|default('About') }}</a>
+  <a href="contact.html"{% if current_page == 'contact' %} aria-current="page"{% endif %}>{{ data.i18n.nav.contact|default('Contact') }}</a>
+</nav>
+
+<main id="main-content">
+{% block content %}{% endblock %}
+</main>
+
+<noscript>
+<style>.fade-in{opacity:1;transform:none}.counter-value{opacity:1}.symptom-result{display:block}.faq-answer{max-height:none;padding:0 20px 18px}.mobile-menu{position:static;display:flex;padding:16px 32px}.hamburger{display:none}</style>
+</noscript>
+
+<footer>
+  <p>&copy; <span id="copyright-year"></span> {{ data.name|default('') }}. {{ data.i18n.footer_rights|default('All rights reserved.') }}</p>
+  <p class="credit">{{ data.i18n.site_credit|default('Site by') }} <a href="https://nikolajanjic.com" target="_blank" rel="noopener noreferrer">Nikola Janjic</a></p>
+</footer>
+
+{% if data.phone %}
+<div class="sticky-cta">
+  <a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="sticky-cta-call">{{ data.i18n.call|default('Call') }}</a>
+  <a href="https://wa.me/{{ data.phone_prefix|default('+1')|replace('+','') }}{{ data.phone }}" class="sticky-cta-wa" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+</div>
+<a href="https://wa.me/{{ data.phone_prefix|default('+1')|replace('+','') }}{{ data.phone }}" class="whatsapp-float" target="_blank" rel="noopener noreferrer" aria-label="{{ data.i18n.cta_whatsapp|default('Message us on WhatsApp') }}">
+  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="white" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.476-.678-6.295-1.844l-.44-.282-3.065 1.027 1.027-3.065-.282-.44A9.96 9.96 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+  </svg>
+</a>
+{% endif %}
+
+<script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="{{ LANG|default('en') }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ NAZIV }} - Outreach</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a;line-height:1.6}
+.container{max-width:680px;margin:0 auto;padding:24px 16px}
+h1{font-size:1.5rem;margin-bottom:4px}
+.subtitle{color:#666;font-size:.9rem;margin-bottom:24px}
+.links{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
+.links a{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;transition:opacity .2s}
+.links a:hover{opacity:.85}
+.wa{background:#25D366;color:white}
+.viber{background:#7360F2;color:white}
+.sajt{background:#1a5276;color:white}
+.email-link{background:#333;color:white}
+.email-bar{display:flex;align-items:center;gap:10px;background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 16px;margin-bottom:32px}
+.email-bar span{font-size:.9rem;color:#333;font-weight:500;flex:1;word-break:break-all}
+.email-bar .copy-email{background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:.8rem;font-weight:500;color:#555;transition:all .2s;white-space:nowrap}
+.email-bar .copy-email:hover{background:#e0e0e0;color:#333}
+.email-bar .copy-email.copied{background:#25D366;color:white;border-color:#25D366}
+.section{margin-bottom:28px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.section-header h2{font-size:1.05rem;color:#333}
+.day-badge{font-size:.75rem;background:#e8ecef;color:#666;padding:4px 10px;border-radius:100px;font-weight:500}
+.msg-box{background:white;border:1px solid #e0e0e0;border-radius:10px;padding:20px;position:relative}
+.msg-box pre{white-space:pre-wrap;word-wrap:break-word;font-family:-apple-system,system-ui,sans-serif;font-size:.92rem;line-height:1.7;color:#1a1a1a}
+.msg-box a{color:#1a5276;text-decoration:underline}
+.copy-btn{position:absolute;top:12px;right:12px;background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:.8rem;font-weight:500;color:#555;transition:all .2s}
+.copy-btn:hover{background:#e0e0e0;color:#333}
+.copy-btn.copied{background:#25D366;color:white;border-color:#25D366}
+.subject-line{background:#f8f8f8;border:1px solid #e0e0e0;border-radius:8px 8px 0 0;padding:12px 20px;font-size:.85rem;color:#666;border-bottom:none}
+.subject-line strong{color:#333}
+.msg-box.with-subject{border-radius:0 0 10px 10px}
+.divider{height:1px;background:#e8ecef;margin:8px 0 28px}
+.footer{text-align:center;color:#999;font-size:.78rem;margin-top:40px;padding-top:20px;border-top:1px solid #e8ecef}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>{{ NAZIV }}</h1>
+<p class="subtitle">Outreach sequence</p>
+
+<div class="links">
+  <a href="https://wa.me/{{ PHONE_PREFIX }}{{ MOBILNI }}?text={{ WHATSAPP_DAN0_ENCODED }}" class="wa" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+  <a href="viber://chat?number=%2B{{ PHONE_PREFIX }}{{ MOBILNI }}" class="viber" target="_blank" rel="noopener noreferrer">Viber</a>
+  <a href="{{ DEMO_URL }}" class="sajt" target="_blank" rel="noopener noreferrer">Demo sajt</a>
+  <a href="mailto:{{ EMAIL }}" class="email-link" target="_blank" rel="noopener noreferrer">Email</a>
+</div>
+
+<div class="email-bar" id="emailBar">
+  <span id="emailAddr">{{ EMAIL }}</span>
+  <button class="copy-email" onclick="copyEmail(this)">Copy email</button>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>WhatsApp / Viber</h2>
+    <span class="day-badge">Day 0</span>
+  </div>
+  <div class="msg-box">
+    <button class="copy-btn" onclick="copyMsg(this)">Copy</button>
+    <pre>{{ WHATSAPP_DAN0 }}</pre>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Email</h2>
+    <span class="day-badge">Day 0</span>
+  </div>
+  <div class="subject-line">Subject: <strong>{{ EMAIL_SUBJECT }}</strong></div>
+  <div class="msg-box with-subject">
+    <button class="copy-btn" onclick="copyMsg(this)">Copy</button>
+    <pre>{{ EMAIL_DAN0 }}</pre>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Follow-up 1 - WhatsApp / Viber</h2>
+    <span class="day-badge">Day 2</span>
+  </div>
+  <div class="msg-box">
+    <button class="copy-btn" onclick="copyMsg(this)">Copy</button>
+    <pre>{{ FOLLOWUP_1 }}</pre>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Booking Link</h2>
+  </div>
+  <div class="msg-box">
+    <a href="https://cal.com/money-maker" target="_blank" rel="noopener noreferrer" style="color:#1a5276;font-weight:600">cal.com/money-maker</a>
+    <p style="margin-top:8px;color:#666;font-size:.9rem">Share this link when lead shows interest. Never include price in messages.</p>
+  </div>
+</div>
+
+<p class="footer">STOP after Follow-up 1. Move to next lead.</p>
+
+</div>
+
+<script>
+// Hide email bar if no email
+var emailBar = document.getElementById('emailBar');
+var emailAddr = document.getElementById('emailAddr');
+if (!emailAddr || !emailAddr.textContent.trim() || emailAddr.textContent.trim() === '{{ EMAIL }}') {
+  if (emailBar) emailBar.style.display = 'none';
+  var emailLink = document.querySelector('.email-link');
+  if (emailLink) emailLink.style.display = 'none';
+}
+
+function copyEmail(btn) {
+  var email = document.getElementById('emailAddr').textContent.trim();
+  navigator.clipboard.writeText(email).then(function() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy email';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function copyMsg(btn) {
+  var pre = btn.parentElement.querySelector('pre');
+  var text = pre.textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(function() {
+    btn.textContent = 'Error';
+    setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
