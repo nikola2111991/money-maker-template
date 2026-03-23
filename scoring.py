@@ -92,6 +92,9 @@ def _calculate(
         issues = site_quality.get("issues", [])
         if issues:
             bd["site_issues"] = ",".join(issues[:3])
+    elif site_quality.get("is_mediocre"):
+        bd["mediocre_website"] = 6
+        t += 6
 
     if not facebook:
         bd["no_facebook"] = 3

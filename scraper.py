@@ -29,7 +29,7 @@ from urllib.parse import quote
 from collections import defaultdict
 
 from utils import cyr_to_lat, has_cyrillic, strip_diacritics
-from config import LEADS_DIR, DEPLOY_BASE_URL, GOOGLE_API_KEY
+from config import LEADS_DIR, DEPLOY_BASE_URL, GOOGLE_API_KEY, GOOGLE_SEARCH_API_KEY, GOOGLE_SEARCH_CX
 from playbook import load_playbook, load_playbook_from_path
 from scoring import score_lead
 
@@ -265,6 +265,21 @@ def init_from_playbook(pb: dict) -> None:
     for flag, pats in NEGATIVE_PATTERNS.items():
         _NEGATIVE_REGEX[flag] = [re.compile(r'(?<![a-zA-ZčćšžđČĆŠŽĐа-яА-ЯљњџЉЊЏ])' + re.escape(p) + r'(?![a-zA-ZčćšžđČĆŠŽĐа-яА-ЯљњџЉЊЏ])', re.IGNORECASE) for p in pats]
 
+def _parse_relative_time(text: str) -> float:
+    """Parse relative time like '2 months ago' to unix timestamp. Returns 0 if unparseable."""
+    if not text:
+        return 0
+    text = text.lower().strip()
+    m = re.match(r'(?:an?\s+|(\d+)\s+)(day|week|month|year)s?\s+ago', text)
+    if not m:
+        return 0
+    count = int(m.group(1)) if m.group(1) else 1
+    unit = m.group(2)
+    days_map = {"day": 1, "week": 7, "month": 30, "year": 365}
+    days = count * days_map.get(unit, 30)
+    return datetime.now().timestamp() - (days * 86400)
+
+
 def analyze_reviews(reviews: List[Dict]) -> Dict:
     """Extract keywords, sentiment, USP candidates, negative patterns from reviews"""
     if not reviews:
@@ -309,6 +324,13 @@ def analyze_reviews(reviews: List[Dict]) -> Dict:
     
     # Review velocity + recency
     times = [r.get("time", 0) for r in reviews if r.get("time")]
+    if not times:
+        # Fallback: parse relative_time_description
+        for r in reviews:
+            rel = r.get("relative_time_description", "")
+            estimated = _parse_relative_time(rel)
+            if estimated > 0:
+                times.append(estimated)
     velocity = "unknown"
     days_since = 999
     if times:
@@ -489,6 +511,7 @@ def check_site_quality(url: str, session: requests.Session) -> Dict:
 
         result["quality_score"] = max(0, score)
         result["is_bad"] = score < 50
+        result["is_mediocre"] = 50 <= score < 70
         result["issues"] = issues
 
     except requests.exceptions.SSLError:
@@ -940,53 +963,75 @@ class DirectoryVerifier:
         self._fail_count = 0
 
     def search_google(self, name: str, city: str) -> Dict:
-        """Google search for additional contacts. Gracefully stops if blocked."""
-        result = {"phones": [], "emails": [], "facebook": None, "instagram": None}
+        """Google Custom Search API for additional contacts. Gracefully stops after 3 failures."""
+        result: Dict = {"phones": [], "emails": [], "facebook": None, "instagram": None}
 
         # If blocked 3+ times, stop wasting time
         if self._blocked:
             return result
 
+        # No API credentials: return empty (don't crash)
+        if not GOOGLE_SEARCH_API_KEY or not GOOGLE_SEARCH_CX:
+            log.debug("Google Custom Search API key or CX not configured. Skipping.")
+            return result
+
         try:
             search_terms = _playbook.get('search_verify_terms', 'kontakt') if _playbook else 'kontakt'
-            q = quote(f'"{name}" {city} {search_terms}')
-            url = f"https://www.google.com/search?q={q}"
-            resp = self.session.get(url, timeout=8)
+            query = f'"{name}" {city} {search_terms}'
+            url = "https://www.googleapis.com/customsearch/v1"
+            params = {
+                "key": GOOGLE_SEARCH_API_KEY,
+                "cx": GOOGLE_SEARCH_CX,
+                "q": query,
+            }
+            resp = self.session.get(url, params=params, timeout=8)
 
-            # Detect blocking (CAPTCHA, 429, empty response)
-            if resp.status_code == 429 or resp.status_code == 503:
+            # Detect rate limiting (429) or server errors
+            if resp.status_code == 429 or resp.status_code >= 500:
                 self._fail_count += 1
                 if self._fail_count >= 3:
                     self._blocked = True
-                    log.warning("⚠️ Google Search blocked (429/503). Skipping remaining verifications.")
+                    log.warning("Google Custom Search blocked (%d). Skipping remaining verifications.", resp.status_code)
                 return result
 
             if resp.status_code == 200:
-                text = resp.text
-                # Detect CAPTCHA page
-                if 'captcha' in text.lower() or 'unusual traffic' in text.lower():
-                    self._fail_count += 1
-                    if self._fail_count >= 3:
-                        self._blocked = True
-                        log.warning("⚠️ Google Search CAPTCHA detected. Skipping remaining verifications.")
-                    return result
+                data = resp.json()
+                items = data.get("items", [])
 
-                result['phones'] = extract_phones(text)
-                result['emails'] = extract_emails(text)
-                fb = re.search(r'href="(https?://(?:www\.)?facebook\.com/[^"]+)"', text)
-                if fb:
-                    result['facebook'] = fb.group(1)
-                ig = re.search(r'href="(https?://(?:www\.)?instagram\.com/[^"]+)"', text)
-                if ig:
-                    result['instagram'] = ig.group(1)
+                all_text = ""
+                for item in items:
+                    snippet = item.get("snippet", "")
+                    link = item.get("link", "")
+                    title = item.get("title", "")
+                    all_text += f" {snippet} {title} {link}"
+
+                    # Extract facebook/instagram from result links
+                    if not result["facebook"] and re.search(r'facebook\.com/', link):
+                        result["facebook"] = link
+                    if not result["instagram"] and re.search(r'instagram\.com/', link):
+                        result["instagram"] = link
+
+                result["phones"] = extract_phones(all_text)
+                result["emails"] = extract_emails(all_text)
+
+                # Also check snippets for social links
+                if not result["facebook"]:
+                    fb = re.search(r'(https?://(?:www\.)?facebook\.com/[^\s",]+)', all_text)
+                    if fb:
+                        result["facebook"] = fb.group(1)
+                if not result["instagram"]:
+                    ig = re.search(r'(https?://(?:www\.)?instagram\.com/[^\s",]+)', all_text)
+                    if ig:
+                        result["instagram"] = ig.group(1)
+
                 # Reset fail count on success
                 self._fail_count = 0
         except Exception as e:
-            log.debug(f"Ignored: {e}")
+            log.debug(f"Google Custom Search error: {e}")
             self._fail_count += 1
             if self._fail_count >= 3:
                 self._blocked = True
-                log.warning("⚠️ Google Search unreachable. Skipping remaining verifications.")
+                log.warning("Google Custom Search unreachable. Skipping remaining verifications.")
         return result
 
 
@@ -1038,9 +1083,11 @@ def build_competitor_reports(leads: List[Lead]) -> None:
             if not lead.website and lead.rating > 0:
                 higher_rated_with_site = [l for l in group if l.website and l.rating < lead.rating]
                 if higher_rated_with_site:
-                    advantage = f"Bolji rating od {len(higher_rated_with_site)} konkurenta koji imaju sajt"
-                if lead.rating >= avg_rating:
-                    advantage = f"Rating iznad proseka kvarta ({avg_rating}), jedini bez sajta"
+                    advantage = f"Higher rating than {len(higher_rated_with_site)} competitors who have websites"
+                elif lead.rating >= avg_rating:
+                    advantage = f"Rating above area average ({avg_rating:.1f}), no website"
+            elif lead.website and lead.rating > avg_rating:
+                advantage = f"Rating above area average ({avg_rating:.1f})"
             
             lead.competitor_report = {
                 "grad": city,
@@ -1554,9 +1601,11 @@ def save_checkpoint(step: int, data: dict, api_calls: int = 0, api_cost: float =
         "data": data,
     }
     filepath = os.path.join(CHECKPOINT_DIR, f"step_{step}.json")
-    with open(filepath, 'w', encoding='utf-8') as f:
+    tmp_path = filepath + ".tmp"
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(checkpoint, f, ensure_ascii=False, indent=2)
-    log.info(f"💾 Checkpoint saved: step {step} ({filepath})")
+    os.replace(tmp_path, filepath)
+    log.info(f"Checkpoint saved: step {step} ({filepath})")
 
 def load_checkpoint(step: int) -> Optional[dict]:
     """Load checkpoint for a specific step. Returns None if not found."""
@@ -1733,7 +1782,18 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
         leads_to_detail = dicts_to_leads_list(step2_ck["data"])
         api.call_count = step2_ck.get("api_calls", 0)
         api.cost_estimate = step2_ck.get("api_cost", 0.0)
-        print(f"\n[2/6] ⏩ Loaded from checkpoint ({len(leads_to_detail)} leads)\n")
+        # Reclassify phone/mobile using current playbook (fixes stale checkpoint data)
+        reclass_count = 0
+        for lead in leads_to_detail:
+            if lead.phone and not lead.mobile and is_mobile(lead.phone):
+                lead.mobile = lead.phone
+                lead.contact_sources.setdefault("mobile", []).extend(lead.contact_sources.pop("phone", []))
+                lead.phone = ""
+                reclass_count += 1
+        print(f"\n[2/6] ⏩ Loaded from checkpoint ({len(leads_to_detail)} leads)")
+        if reclass_count:
+            print(f"       Reclassified {reclass_count} phones → mobile (playbook update)")
+        print()
     else:
         print(f"\n[2/6] Getting Details (top {detail_count})...\n")
         
@@ -1784,7 +1844,10 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
             
             # Photos
             photos = details.get("photos", [])
-            lead.photo_urls = [p.get("photo_reference") for p in photos[:10] if p.get("photo_reference")]
+            photo_refs = [p.get("photo_reference") for p in photos[:10] if p.get("photo_reference")]
+            if photos and not photo_refs:
+                log.warning(f"Photos exist but no photo_reference for {lead.name}")
+            lead.photo_urls = photo_refs
             
             # Reviews (Places API - max 5)
             reviews_raw = details.get("reviews", [])
@@ -1858,6 +1921,12 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
     step3_ck = load_checkpoint(3) if resume else None
     if step3_ck:
         leads_to_detail = dicts_to_leads_list(step3_ck["data"])
+        # Reclassify phone/mobile using current playbook (fixes stale checkpoint data)
+        for lead in leads_to_detail:
+            if lead.phone and not lead.mobile and is_mobile(lead.phone):
+                lead.mobile = lead.phone
+                lead.contact_sources.setdefault("mobile", []).extend(lead.contact_sources.pop("phone", []))
+                lead.phone = ""
         print(f"\n[3/6] ⏩ Loaded from checkpoint\n")
     else:
         print(f"\n[3/6] Web Enrichment + Site Quality Check...\n")
@@ -1911,6 +1980,12 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
     step4_ck = load_checkpoint(4) if resume else None
     if step4_ck:
         leads_to_detail = dicts_to_leads_list(step4_ck["data"])
+        # Reclassify phone/mobile using current playbook (fixes stale checkpoint data)
+        for lead in leads_to_detail:
+            if lead.phone and not lead.mobile and is_mobile(lead.phone):
+                lead.mobile = lead.phone
+                lead.contact_sources.setdefault("mobile", []).extend(lead.contact_sources.pop("phone", []))
+                lead.phone = ""
         print(f"\n[4/6] ⏩ Loaded from checkpoint ({len(leads_to_detail)} leads)\n")
     else:
         print(f"\n[4/6] Cross-referencing & Verification...\n")
@@ -2149,6 +2224,12 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
 ║              schema_draft.json | data.json | photos/             ║
 ╚══════════════════════════════════════════════════════════════════╝
     """)
+
+    # Cleanup checkpoints after successful fresh run
+    if not resume and os.path.exists(CHECKPOINT_DIR):
+        import shutil
+        shutil.rmtree(CHECKPOINT_DIR)
+        log.info("Checkpoints cleaned up after successful run")
 
 
 if __name__ == "__main__":
