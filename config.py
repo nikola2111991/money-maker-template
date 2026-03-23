@@ -23,9 +23,9 @@ PLAYBOOK_DIR = PROJECT_DIR / "playbooks"
 TEMPLATES_DIR = PROJECT_DIR
 
 # --- URLs ---
-DEPLOY_BASE_URL = _env("MM_DEPLOY_URL", "")
-CAL_COM_URL = _env("MM_CAL_URL", "")
-SENDER_EMAIL = _env("MM_SENDER_EMAIL", "")
+DEPLOY_BASE_URL = _env("MM_DEPLOY_URL", "https://nikola2111991.github.io/mm-demos")
+CAL_COM_URL = _env("MM_CAL_URL", "cal.com/money-maker")
+SENDER_EMAIL = _env("MM_SENDER_EMAIL", "nikola@nikolajanjic.com")
 
 # --- API Keys (read from env, never hardcoded) ---
 GOOGLE_API_KEY = _env("GOOGLE_API_KEY", "") or _env("GOOGLE_PLACES_API_KEY", "")

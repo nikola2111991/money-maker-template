@@ -118,12 +118,12 @@ python3 pipeline.py due
 
 ## Business Rules
 
-- Set your price per site. NEVER in messages, only on call.
+- Price: 1500 EUR per site. NEVER in messages, only on call.
 - Outreach: 1 initial message + 1 follow-up (day 2). Then move on.
-- Booking: set MM_CAL_URL in .env (share when lead shows interest)
+- Booking: cal.com/money-maker (share when lead shows interest)
 - Trust: through specificity (review quotes, competitor names, concrete numbers)
 - No fake credentials. No AI mentions. Developer, not agency.
-- Deploy: GitHub Pages (set MM_DEPLOY_REPO and MM_DEPLOY_URL in .env)
+- Deploy: GitHub Pages (mm-demos repo)
 
 ## Scoring v3.1
 
@@ -174,9 +174,9 @@ Base template: base.html. Outreach: outreach-template.html.
 
 ## Deploy
 
-GitHub Pages (set MM_DEPLOY_REPO in .env)
-render.py --deploy → $MM_DEPLOY_REPO/[slug]/ → git push
-Live: $MM_DEPLOY_URL/[slug]/
+GitHub Pages (repo: nikola2111991/mm-demos)
+render.py --deploy → ~/Documents/mm-demos/[slug]/ → git push
+Live: https://nikola2111991.github.io/mm-demos/[slug]/
 
 ## Testing
 

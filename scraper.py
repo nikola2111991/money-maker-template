@@ -45,11 +45,7 @@ try:
 except ImportError:
     HAS_PILLOW = False
 
-try:
-    from serpapi_reviews import enrich_lead_reviews, get_serpapi_key
-    HAS_SERPAPI = True
-except ImportError:
-    HAS_SERPAPI = False
+HAS_SERPAPI = False  # Removed: Claude Code reads reviews directly per-lead
 
 try:
     from tqdm import tqdm
@@ -1219,56 +1215,20 @@ def fix_serbian_diacritics(text: str) -> str:
 
 
 def extract_vlasnik(name: str) -> Tuple[str, str]:
-    """Extract owner name from auto servis name. Returns (full, short) or ("", "").
-    Unlike dental (Dr prefix), auto servise use business names.
-    Tries to find personal names in the business name."""
+    """Extract owner name from business name. Returns (full, short) or ("", "")."""
     name_lat = cyr_to_lat(name)
-
-    # Pattern: "Auto Servis [Prezime]" style
     words = name_lat.split()
     if len(words) >= 2:
         last = words[-1]
-        servis_words = {"servis", "auto", "centar", "plus", "pro", "express",
-                       "mehanika", "vulkanizer", "limarija", "farbara", "garage",
-                       "garaža", "garaza", "motors", "cars", "car", "service",
-                       "elektro", "elektrika", "dijagnostika", "point", "team"}
-        city_names = {c.lower() for c in CITIES.keys()} | {cyr_to_lat(c).lower() for c in CITIES_CYRILLIC.values()}
+        biz_words = set(_playbook.get('business_type_words', [])) if _playbook else set()
+        biz_words |= {"plus", "pro", "express", "point", "team", "group",
+                      "service", "services", "solutions", "pty", "ltd"}
+        city_names = {c.lower() for c in CITIES.keys()}
         if (last[0].isupper() and len(last) >= 4
-            and last.lower() not in servis_words
+            and last.lower() not in biz_words
             and last.lower() not in city_names):
-            fixed = fix_serbian_diacritics(last)
-            return fixed, fixed
-
+            return last, last
     return "", ""
-
-
-def outreach_greeting(lead: 'Lead') -> str:
-    """Vrati odgovarajuće obraćanje za outreach poruke.
-
-    Hijerarhija:
-    1. Ime vlasnika iz naziva servisa (extract_vlasnik)
-    2. Ime vlasnika iz schema polja (vlasnik_kratko, vlasnik)
-    3. Poštovani (fallback)
-
-    NE koristi genericke nazive servisa kao pozdrav.
-    """
-    # 1. Ime vlasnika iz naziva servisa
-    _, short = extract_vlasnik(lead.name)
-    if short:
-        return short
-    # 2. Ime vlasnika iz schema polja
-    if hasattr(lead, 'schema') and isinstance(lead.schema, dict):
-        name_short = lead.schema.get('name_short', '')
-        name = lead.schema.get('name', '')
-        for field in ('owner_short', 'owner'):
-            val = lead.schema.get(field, '')
-            if not val or val in ('???', '_POPUNI_'):
-                continue
-            if val == name_short or val in name or val.startswith('Tim '):
-                continue  # naziv servisa, ne ime vlasnika
-            return val
-    # 3. Poslednji fallback
-    return "Poštovani"
 
 
 def format_mobilni(phone: str) -> Tuple[str, str]:
@@ -1441,346 +1401,12 @@ def generate_schema_draft(lead: 'Lead') -> Dict:
     return draft
 
 
-# ============================================================
-# OUTREACH - copy-paste ready, per-section
-# ============================================================
 
-def generate_outreach(lead: 'Lead') -> Dict:
-    prezime_full, prezime_short = extract_vlasnik(lead.name)
-    prezime = outreach_greeting(lead)
-    rev_author, rev_quote = get_best_review_quote(lead.reviews, latinize=True)
-    comp_full, comp_short, comp_rating = get_competitor_with_site(lead.competitor_report or {})
-    # FIX: kad je kvart == grad, koristi samo grad (ne "Beograd, Beograd")
-    kvart = lead.district if (lead.district and lead.district != lead.city) else lead.city
-    lokacija = f"{kvart}, {lead.city}" if kvart != lead.city else lead.city
-    wa_num = lead.mobile.replace("+", "").replace(" ", "") if lead.mobile else ""
-    wa_link = f"https://wa.me/{wa_num}" if wa_num else ""
-    viber_link = f"viber://chat?number=%2B{wa_num}" if wa_num else ""
-    _, mob_display = format_mobilni(lead.mobile)
-    ra = lead.review_analysis or {}
-    top_kw = [k.get("keyword", "") for k in ra.get("top_keywords", [])]
-    
-    # Gender detection za review autora
-    # Serbian male names ending in 'a' - would otherwise be misdetected as female
-    MALE_NAMES_ENDING_A = {
-        "nikola", "luka", "nemanja", "voja", "kosta", "andrija", "ilija",
-        "matija", "sava", "nikša", "mihajla", "danila", "gavrila", "đorđa",
-        "slaviša", "saša", "dragiša", "siniša", "preda", "žika", "mika",
-        "bata", "jova", "pera", "aca", "boba", "goca", "mica", "toma",
-        "voja", "nebojša", "vlada", "sloba", "bora", "gojka", "srba",
-    }
-    first_name = rev_author.split()[0].lower() if rev_author else ""
-    if first_name in MALE_NAMES_ENDING_A:
-        napisao = "napisao"
-    elif first_name.endswith('a') and first_name not in MALE_NAMES_ENDING_A:
-        napisao = "napisala"
-    else:
-        napisao = "napisao"
-    
-    # KONTAKT BLOK (sa Viber linkom)
-    wa_md = f"[WhatsApp]({wa_link})" if wa_link else "N/A"
-    viber_md = f"[Viber]({viber_link})" if viber_link else "N/A"
-    kontakt_blok = f"Telefon: {lead.mobile or 'N/A'}\nWhatsApp: {wa_md}\nViber: {viber_md}\nEmail: {lead.email or 'N/A'}\nDemo sajt: [URL se generise posle deploy-a]"
-    
-    # WHATSAPP - kratak, max ~55 reči
-    # Paragrafi razdvojeni sa \n\n, rečenice u istom paragrafu spojene razmakom
-    greeting_is_name = prezime.lower() != "poštovani"
-    wa_paragraphs = []
-    wa_paragraphs.append(f"{prezime}," if greeting_is_name else "Poštovani,")
-    # Paragraf 2: citat
-    p_citat = "Čitao sam recenzije Vašeg servisa."
-    if rev_author and rev_quote:
-        p_citat += f' {rev_author} kaže: "{rev_quote}"'
-    wa_paragraphs.append(p_citat)
-    # Paragraf 3: stats + konkurent
-    p_stats = f"{lead.review_count} klijenata. {lead.rating} na Google-u."
-    if comp_short:
-        p_stats += f" {comp_short} u {kvart} ima sajt. Kad neko traži auto servis online, njega nalazi."
-    wa_paragraphs.append(p_stats)
-    # Paragraf 4: demo link
-    wa_paragraphs.append("Napravio sam Vam demo:\n[LINK]")
-    # Paragraf 5: CTA
-    wa_paragraphs.append("Da li sam pogodio ton?")
-    whatsapp = "\n\n".join(wa_paragraphs)
-    
-    # EMAIL SUBJECTS - curiosity first
-    subj1 = f"{rev_author} je {napisao} nešto o Vama" if rev_author else f"{shorten_name(lead.name)}, napravio sam Vam nešto"
-    subj2 = f"{shorten_name(lead.name)}, napravio sam Vam nešto"
-    subj3 = f"Proverio sam Vašu konkurenciju u {kvart}, {prezime}"
-    
-    # EMAIL BODY - paragrafi razdvojeni sa \n\n
-    e_paragraphs = []
-    e_paragraphs.append(f"{prezime}," if greeting_is_name else "Poštovani,")
-    # Paragraf 2: citat
-    p_citat_e = "Čitao sam recenzije Vašeg servisa."
-    if rev_author and rev_quote:
-        p_citat_e += f' {rev_author} je {napisao}: "{rev_quote}"'
-    e_paragraphs.append(p_citat_e)
-    # Paragraf 3: stats
-    p_stats_e = f"{lead.review_count} klijenata. {lead.rating} na Google-u."
-    if lead.years_in_business and lead.years_in_business >= 5:
-        p_stats_e += f" {lead.years_in_business} godina rada."
-    if top_kw:
-        p_stats_e += f" Klijenti posebno hvale: {top_kw[0]}."
-    e_paragraphs.append(p_stats_e)
-    # Paragraf 4: sajt status
-    if not lead.website:
-        e_paragraphs.append("Ono što me je iznenadilo: Vaš servis nema website.")
-    elif lead.site_quality.get("is_bad"):
-        if "not_responsive" in lead.site_quality.get("issues", []):
-            e_paragraphs.append("Vaš trenutni sajt nije prilagođen za mobilne telefone, a 70% klijenata Vas traži sa telefona.")
-        else:
-            e_paragraphs.append("Vaš trenutni sajt bi mogao biti znatno bolji i moderniji.")
-    # Paragraf 5: konkurencija
-    if comp_full:
-        e_paragraphs.append(f"Proverio sam konkurenciju. {comp_full} ima sajt, a rating im je {comp_rating}. Klijent koji traži auto servis online, njega nalazi. Vas ne. A Vi radite bolje. Vaše recenzije to jasno pokazuju.")
-    # Paragraf 6: preporuka
-    e_paragraphs.append("I kad Vas neko preporuči prijatelju, ta osoba prvo otvori Google i ukuca Vaše ime. Bez sajta, ta preporuka radi upola.")
-    # Paragraf 7: demo
-    e_paragraphs.append("Napravio sam Vam demo. Koristio sam Vaše realne podatke, recenzije i usluge koje klijenti najčešće pominju.\n[LINK]")
-    # Paragraf 8: CTA
-    e_paragraphs.append("Jeste li se prepoznali?")
-    email_body = "\n\n".join(e_paragraphs)
-    
-    # FOLLOW-UPS - 5 varijanti, personalizovane
-    # Ime: "Dr Vučićević, dok sam čekao..."  (isti red)
-    # Poštovani: "Poštovani,\n\nDok sam čekao..." (novi paragraf + veliko slovo)
-
-    # A: Novi podatak (konkurencija)
-    followup_a = ""
-    if comp_short:
-        if greeting_is_name:
-            followup_a = f"{prezime}, dok sam čekao Vaš odgovor, primetio sam da je {comp_short} u {kvart} upravo ažurirao svoj sajt. Online prisutnost raste.\n\nVaš demo je spreman: [LINK]\n\nDa li ste stigli da pogledate?"
-        else:
-            followup_a = f"Poštovani,\n\nDok sam čekao Vaš odgovor, primetio sam da je {comp_short} u {kvart} upravo ažurirao svoj sajt. Online prisutnost raste.\n\nVaš demo je spreman: [LINK]\n\nDa li ste stigli da pogledate?"
-
-    # B: Review keyword hook
-    followup_b = ""
-    if top_kw:
-        if greeting_is_name:
-            followup_b = f"{prezime}, Vaši klijenti na Google-u najčešće hvale: {top_kw[0]}. To sam posebno istakao na demo sajtu.\n\n[LINK]\n\nMislim da će Vam se svideti kako to izgleda."
-        else:
-            followup_b = f"Poštovani,\n\nVaši klijenti na Google-u najčešće hvale: {top_kw[0]}. To sam posebno istakao na demo sajtu.\n\n[LINK]\n\nMislim da će Vam se svideti kako to izgleda."
-
-    # C: Konkretan gubitak (sa konkurentom i cenom ako postoje)
-    if comp_short:
-        if greeting_is_name:
-            followup_c = f"{prezime}, svaki klijent koji ode u {comp_short} umesto kod Vas jer Vas nije našao online. To je jedna ili dve popravke manje mesečno.\n\nSajt sam već napravio:\n[LINK]\n\nDa prođemo zajedno?"
-        else:
-            followup_c = f"Poštovani,\n\nSvaki klijent koji ode u {comp_short} umesto kod Vas jer Vas nije našao online. To je jedna ili dve popravke manje mesečno.\n\nSajt sam već napravio:\n[LINK]\n\nDa prođemo zajedno?"
-    else:
-        if greeting_is_name:
-            followup_c = f"{prezime}, svaki klijent koji Vas ne nađe online ode kod drugog. To je jedna ili dve popravke manje mesečno.\n\nSajt sam već napravio:\n[LINK]\n\nDa prođemo zajedno?"
-        else:
-            followup_c = f"Poštovani,\n\nSvaki klijent koji Vas ne nađe online ode kod drugog. To je jedna ili dve popravke manje mesečno.\n\nSajt sam već napravio:\n[LINK]\n\nDa prođemo zajedno?"
-
-    # D: Social proof (nov citat iz recenzija)
-    second_author, second_quote = "", ""
-    if len(lead.reviews) >= 2:
-        for r in lead.reviews[1:]:
-            if r.get("rating", 0) >= 4 and len(r.get("text", "")) > 20:
-                second_author = cyr_to_lat(r.get("author", "Klijent"))
-                text = cyr_to_lat(r["text"])
-                end = min(len(text), MAX_QUOTE_CHARS)
-                for sep in ['. ', '! ', '? ']:
-                    idx = text.find(sep)
-                    if 15 < idx < MAX_QUOTE_CHARS:
-                        end = idx + 1
-                        break
-                second_quote = text[:end].strip()
-                break
-    if second_author and second_quote:
-        second_first = second_author.split()[0].lower() if second_author else ""
-        if second_first in MALE_NAMES_ENDING_A:
-            napisao2 = "napisao"
-        elif second_first.endswith('a') and second_first not in MALE_NAMES_ENDING_A:
-            napisao2 = "napisala"
-        else:
-            napisao2 = "napisao"
-        if greeting_is_name:
-            followup_d = f'{prezime}, čitao sam Vaše recenzije. {second_author} je {napisao2}: "{second_quote}". Takve stvari treba da vidi svaki potencijalni klijent.\n\nDemo sajt:\n[LINK]\n\nKratak poziv ove nedelje?'
-        else:
-            followup_d = f'Poštovani,\n\nČitao sam Vaše recenzije. {second_author} je {napisao2}: "{second_quote}". Takve stvari treba da vidi svaki potencijalni klijent.\n\nDemo sajt:\n[LINK]\n\nKratak poziv ove nedelje?'
-    else:
-        if greeting_is_name:
-            followup_d = f"{prezime}, Vaše recenzije govore same za sebe. {lead.review_count} klijenata Vam je dalo {lead.rating}. To treba da vidi svako ko traži auto servis.\n\nDemo sajt:\n[LINK]\n\nKratak poziv ove nedelje?"
-        else:
-            followup_d = f"Poštovani,\n\nVaše recenzije govore same za sebe. {lead.review_count} klijenata Vam je dalo {lead.rating}. To treba da vidi svako ko traži auto servis.\n\nDemo sajt:\n[LINK]\n\nKratak poziv ove nedelje?"
-
-    # E: Minimalna
-    if greeting_is_name:
-        followup_e = f"{prezime}, samo da proverim. Da li ste videli demo?\n[LINK]"
-    else:
-        followup_e = f"Poštovani,\n\nDa li ste videli demo sajt?\n[LINK]"
-
-    # Izaberi najbolju varijantu automatski
-    # Broji reci u WhatsApp poruci - ako je bila 80+, koristi E (minimalnu)
-    wa_word_count = len(whatsapp.split())
-    if wa_word_count > 80:
-        followup_wa = followup_e
-    elif comp_short and followup_a:
-        followup_wa = followup_a
-    elif top_kw and followup_b:
-        followup_wa = followup_b
-    else:
-        followup_wa = followup_c
-
-    # Follow-up email (Dan 3)
-    if greeting_is_name:
-        followup_email = f"{prezime}, samo kratka napomena. Demo sajt za {shorten_name(lead.name)} je još uvek dostupan:\n[LINK]\n\nAko Vam se sviđa, možemo na kratkom pozivu da prođemo kroz detalje:\n[BOOKING]\n\nDa li Vam odgovara kratak poziv ove nedelje?"
-    else:
-        followup_email = f"Poštovani,\n\nDemo sajt za {shorten_name(lead.name)} je još uvek dostupan:\n[LINK]\n\nAko Vam se sviđa, možemo na kratkom pozivu da prođemo kroz detalje:\n[BOOKING]\n\nDa li Vam odgovara kratak poziv ove nedelje?"
-
-    # Follow-up 3 - poslednji (Dan 7)
-    if greeting_is_name:
-        followup_final = f"{prezime}, poslednji put se javljam. Demo sajt:\n[LINK]\n\nAko Vas zanima, javite se kad Vam odgovara. Ako ne, nema problema."
-    else:
-        followup_final = f"Poštovani,\n\nPoslednji put se javljam. Demo sajt:\n[LINK]\n\nAko Vas zanima, javite se kad Vam odgovara. Ako ne, nema problema."
-    
-    kanal = "WhatsApp" if lead.mobile else ("Email" if lead.email else "Telefon")
-    ton = "direktan, profesionalan" if lead.category == "HOT" else "prijateljski" if lead.category == "WARM" else "oprezno, edukativno"
-    
-    # FIX #12: WhatsApp confidence - 060/069 su često VoIP/biznis linije
-    wa_warning = ""
-    if lead.mobile:
-        prefix = lead.mobile.replace("+381", "0")[:3]
-        if prefix in ("060", "069"):
-            wa_warning = f"⚠️ Broj {prefix}... može biti VoIP/biznis linija - proveri da li ima WhatsApp pre slanja"
-            kanal = "WhatsApp (proveri)" if not lead.email else "Email (WA nesiguran)"
-    
-    result = {
-        "kontakt_blok": kontakt_blok, "whatsapp": whatsapp,
-        "email_subject_1": subj1, "email_subject_2": subj2, "email_subject_3": subj3,
-        "email_body": email_body, "followup_wa": followup_wa, "followup_email": followup_email,
-        "followup_a": followup_a, "followup_b": followup_b, "followup_c": followup_c,
-        "followup_d": followup_d, "followup_e": followup_e, "followup_final": followup_final,
-        "kanal": kanal, "wa_link": wa_link, "viber_link": viber_link,
-        "ton": ton, "wa_warning": wa_warning,
-    }
-
-    # Dijakritici na SVIM porukama (imena, citati, konkurenti iz Google API dolaze bez)
-    _skip = {"wa_link", "viber_link", "kanal", "ton", "wa_warning", "kontakt_blok"}
-    for key, val in result.items():
-        if key not in _skip and isinstance(val, str) and val:
-            result[key] = fix_serbian_diacritics(val)
-
-    return result
-
-
-def write_outreach_md(lead: 'Lead', outreach: Dict, filepath: str):
-    wa_warn_line = f"\n{outreach['wa_warning']}\n" if outreach.get('wa_warning') else ""
-    md = f"""# OUTREACH - {lead.name}
-**{lead.score}/100 ({lead.category})** | Kanal: {outreach['kanal']} | Ton: {outreach['ton']}
-Slati: radnim danom 13-16h | Follow-up: sutradan ako ne odgovori
-{wa_warn_line}
----
-
-## KONTAKT (kopiraj)
-
-```
-{outreach['kontakt_blok']}
-```
-
----
-
-## 1. WHATSAPP PORUKA
-Posalji na: [WhatsApp]({outreach['wa_link']}) | [Viber]({outreach.get('viber_link', '')})
-
-```
-{outreach['whatsapp']}
-```
-
----
-
-## 2. EMAIL
-
-### Subject (izaberi 1):
-
-**A:**
-```
-{outreach['email_subject_1']}
-```
-
-**B:**
-```
-{outreach['email_subject_2']}
-```
-
-**C:**
-```
-{outreach['email_subject_3']}
-```
-
-### Body:
-
-```
-{outreach['email_body']}
-```
-
----
-
-## 3. FOLLOW-UP (Dan 1 - WhatsApp)
-Pravilo: NIKAD ne ponavljaj info iz prvog messidža. Dodaj novu vrednost.
-Booking link SAMO u follow-up-u: [BOOKING]
-
-### Preporučena varijanta:
-```
-{outreach['followup_wa']}
-```
-
-### Sve varijante:
-
-**A: Novi podatak (konkurencija):**
-```
-{outreach.get('followup_a', 'N/A - nema podataka o konkurenciji')}
-```
-
-**B: Review keyword hook:**
-```
-{outreach.get('followup_b', 'N/A - nema keyword podataka')}
-```
-
-**C: Konkretan gubitak:**
-```
-{outreach['followup_c']}
-```
-
-**D: Social proof:**
-```
-{outreach['followup_d']}
-```
-
-**E: Minimalna:**
-```
-{outreach['followup_e']}
-```
-
----
-
-## 4. FOLLOW-UP EMAIL (Dan 3, reply thread)
-
-### Subject: Re: prethodni subject
-
-```
-{outreach['followup_email']}
-```
-
----
-
-## 5. POSLEDNJI FOLLOW-UP (Dan 7)
-
-```
-{outreach['followup_final']}
-```
-
-**STOP posle ovog. Ne kontaktiraj ponovo.**
-"""
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(md)
+# Outreach generation removed: handled per-lead in Claude Code
 
 
 # ============================================================
-# CLAUDE PROMPT - paste into Claude to finish site + deploy
+# CLAUDE_PROMPT.md - per-lead instructions for Claude Code
 # ============================================================
 
 def generate_claude_prompt(lead: 'Lead', folder_name: str) -> str:
@@ -1789,17 +1415,17 @@ def generate_claude_prompt(lead: 'Lead', folder_name: str) -> str:
         if r.get("text"):
             stars = "★" * int(r.get("rating", 5))
             rev_text += f"- {r.get('author', '?')} {stars}: {r.get('text', '')[:200]}\n"
-    
+
     kw_text = ""
     for kw in (lead.review_analysis or {}).get("top_keywords", []):
         kw_text += f"- {kw.get('keyword', '?')} ({kw.get('count', 0)}x)\n"
-    
+
     cr = lead.competitor_report or {}
     comp_text = ""
-    for c in cr.get("top_konkurenti", []):
-        sajt = "ima sajt" if c.get("ima_sajt") else "nema sajt"
-        comp_text += f"- {c.get('naziv', '?')} ({c.get('rating', 0)}★, {c.get('recenzija', 0)} rec, {sajt})\n"
-    
+    for c in cr.get("top_konkurenti", cr.get("top_competitors", [])):
+        sajt = "has site" if c.get("ima_sajt", c.get("has_site")) else "no site"
+        comp_text += f"- {c.get('naziv', c.get('name', '?'))} ({c.get('rating', 0)}★, {c.get('recenzija', c.get('reviews', 0))} rev, {sajt})\n"
+
     niche = _playbook.get('niche', 'business') if _playbook else 'business'
     specs = ", ".join(lead.specialties) if lead.specialties else niche
 
@@ -1833,87 +1459,49 @@ Total: {cr.get('total_u_kvartu', cr.get('total_in_area', '?'))} | With site: {cr
 
 
 # ============================================================
-# BRIEF - compact, action-oriented
+# BRIEF.md - compact lead summary
 # ============================================================
 
 def generate_brief(lead: 'Lead') -> str:
     wa_num = lead.mobile.replace('+', '').replace(' ', '') if lead.mobile else ""
     wa = f"[WhatsApp](https://wa.me/{wa_num})" if wa_num else "N/A"
     viber = f"[Viber](viber://chat?number=%2B{wa_num})" if wa_num else "N/A"
-    niche = _playbook.get('niche', 'General') if _playbook else 'General'
+    niche = _playbook.get('niche', 'business') if _playbook else 'business'
     specs = ", ".join(lead.specialties) if lead.specialties else niche
     kvart_display = lead.district if (lead.district and lead.district != lead.city) else "-"
-    
+
     signals = []
     if not lead.website and lead.rating >= 4.5 and lead.review_count >= 20:
-        signals.append("🔥 DIGITAL GAP")
-    elif lead.site_quality.get("is_bad"):
-        signals.append(f"⚠️ BAD SITE")
-    if lead.mobile: signals.append("📱 WhatsApp")
-    if any(p.lower() in (lead.district + " " + lead.address).lower() for p in PREMIUM_LOCATIONS):
-        signals.append("📍 Premium")
-    if lead.specialties: signals.append(f"💎 {', '.join(lead.specialties[:2])}")
-    if lead.review_count >= 50: signals.append(f"⭐ {lead.review_count} rev")
-    
-    return f"""# {lead.name.upper()}
-## {lead.score}/100 → {lead.category}
+        signals.append("DIGITAL GAP")
+    if lead.website and hasattr(lead, 'site_quality') and lead.site_quality and lead.site_quality.get("is_bad"):
+        signals.append("BAD SITE")
+    if any(loc.lower() in (lead.address or "").lower() for loc in (_playbook.get('premium_locations', []) if _playbook else [])):
+        signals.append("Premium")
 
-{' | '.join(signals) if signals else "Standard lead"}
+    signal_str = " | ".join(signals) if signals else ""
 
-| | |
-|---|---|
+    return f"""# {lead.name} ({lead.score}pts {lead.category})
+{signal_str}
+
+| Field | Value |
+|-------|-------|
 | City / District | {lead.city} / {kvart_display} |
 | Address | {lead.address} |
 | Mobile | {lead.mobile or "N/A"} |
-| WhatsApp | {wa} |
-| Viber | {viber} |
+| Phone | {lead.phone or "N/A"} |
 | Email | {lead.email or "N/A"} |
-| Rating | {lead.rating}★ ({lead.review_count} rev) |
+| Rating | {lead.rating} ({lead.review_count} rev) |
 | Specializations | {specs} |
 | Website | {lead.website or "NONE"} |
-| Google Maps | {lead.google_maps_url} |
+| {wa} | {viber} |
 
 ## FILES
 | File | What |
 |------|------|
-| **CLAUDE_PROMPT.md** | Paste into Claude Code for site + outreach |
-| schema_draft.json | Data only, fill content per-lead |
-| data.json | Raw scraped data |
+| CLAUDE_PROMPT.md | Paste into Claude Code |
+| schema_draft.json | Data only, fill content |
+| data.json | Raw data |
 """
-
-
-# ============================================================
-# GLOBAL FILES - tracker + dashboard
-# ============================================================
-
-def write_outreach_tracker(leads_and_outreach: list, filepath: str):
-    lines = [
-        f"# OUTREACH TRACKER - {datetime.now().strftime('%Y-%m-%d')}",
-        f"Ukupno: {len(leads_and_outreach)} leadova\n",
-        "| # | Servis | Score | Kanal | Status |",
-        "|---|-----------|-------|-------|--------|",
-    ]
-    for i, (lead, out) in enumerate(leads_and_outreach, 1):
-        lines.append(f"| {i} | {lead.name[:30]} | {lead.score}/{lead.category} | {out['kanal']} | ⬜ |")
-    
-    lines.append("\n---\n")
-    
-    for i, (lead, out) in enumerate(leads_and_outreach, 1):
-        lines.append(f"\n# {i}. {lead.name} ({lead.score}/{lead.category})")
-        lines.append(f"\n### Kontakt\n```\n{out['kontakt_blok']}\n```")
-        lines.append(f"\n### WhatsApp → {out['wa_link'] or 'N/A'}\n```\n{out['whatsapp']}\n```")
-        lines.append(f"\n### Email subject (izaberi 1)")
-        lines.append(f"**A:** `{out['email_subject_1']}`")
-        lines.append(f"**B:** `{out['email_subject_2']}`")
-        lines.append(f"**C:** `{out['email_subject_3']}`")
-        lines.append(f"\n### Email body\n```\n{out['email_body']}\n```")
-        lines.append(f"\n### Follow-up (sutradan)")
-        lines.append(f"**WhatsApp:**\n```\n{out['followup_wa']}\n```")
-        lines.append(f"**Email:**\n```\n{out['followup_email']}\n```")
-        lines.append(f"\n---")
-    
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write("\n".join(lines))
 
 
 def write_dashboard(qualified: list, filepath: str):
@@ -2138,14 +1726,7 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
     detail_count = min(target * 2, len(leads_list))
     leads_to_detail = leads_list[:detail_count]
     
-    # SerpApi za kompletne recenzije (opcionalno)
-    serpapi_key = ""
-    if HAS_SERPAPI:
-        serpapi_key = get_serpapi_key()
-        if serpapi_key:
-            print(f"  SerpApi Reviews: aktiviran")
-        else:
-            print(f"  SerpApi Reviews: SERPAPI_KEY nije setovan, koristim samo Places API (max 5 recenzija)")
+    serpapi_key = ""  # SerpApi removed: Claude Code reads reviews per-lead
 
     step2_ck = load_checkpoint(2) if resume else None
     if step2_ck:
@@ -2396,27 +1977,6 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
     qualified.sort(key=lambda x: x.score, reverse=True)
     qualified = qualified[:target]
 
-    # SerpApi: enrich HOT+WARM leads with ALL reviews
-    if HAS_SERPAPI and serpapi_key:
-        hot_warm = [l for l in qualified if l.category in ("HOT", "WARM") and l.review_count > 5]
-        if hot_warm:
-            print(f"\n  SerpApi: enriching {len(hot_warm)} HOT+WARM leads with full reviews...")
-            quota_exhausted = False
-            for lead in tqdm(hot_warm, desc="  SerpApi Reviews"):
-                if quota_exhausted:
-                    break
-                try:
-                    lang = _playbook.get('language', 'en') if _playbook else 'en'
-                    lead.reviews = enrich_lead_reviews(lead.place_id, serpapi_key, lead.reviews, language=lang)
-                    lead.review_analysis = analyze_reviews(lead.reviews)
-                except Exception as e:
-                    err_str = str(e).lower()
-                    if 'quota' in err_str or 'credit' in err_str or 'limit' in err_str:
-                        print(f"\n  SerpApi quota exhausted. Continuing with Places API reviews.")
-                        quota_exhausted = True
-                    else:
-                        log.warning(f"  SerpApi error for {lead.name}: {e}")
-
     # Stats
     hot = len([l for l in qualified if l.category == "HOT"])
     warm = len([l for l in qualified if l.category == "WARM"])
@@ -2444,7 +2004,6 @@ def main(target: int = 300, api_key: str = "", cities_filter: str = "top8", resu
         os.makedirs(f"{output_dir}/{cat}", exist_ok=True)
     
     counts = {"HOT": 0, "WARM": 0, "COOL": 0}
-    all_leads_outreach = []  # (lead, outreach_dict) pairs
     
     for lead in tqdm(qualified, desc="  Output"):
         counts[lead.category] += 1
@@ -2602,10 +2161,8 @@ if __name__ == "__main__":
                    help="'top4', 'top8', 'all', or comma-separated: 'Beograd,Novi Sad'")
     p.add_argument("--resume", action="store_true", help="Resume from last checkpoint (skips completed steps)")
     p.add_argument("--no-clean", action="store_true", help="Don't delete output dir before generating (default: clean)")
-    p.add_argument("--no-serpapi", action="store_true", help="Skip SerpApi review enrichment")
+
     a = p.parse_args()
-    if a.no_serpapi:
-        HAS_SERPAPI = False  # noqa: F841 - module-level var
     pb = load_playbook_from_path(a.playbook)
     init_from_playbook(pb)
     main(target=a.target, api_key=a.key, cities_filter=a.cities, resume=a.resume, no_clean=a.no_clean)
