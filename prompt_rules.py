@@ -35,6 +35,32 @@ TONE_RULES: str = """\
 
 BANNED_WORDS_RULE: str = f"- Banned words: {', '.join(BANNED_WORDS)}."
 
+OUTREACH_RULES: str = """\
+- Email max 80 words, WhatsApp max 3 sentences.
+- Economic angle required: lead with "competitors with websites get Google traffic you are missing".
+- Must contain 1 competitor stat from competitor_report (e.g. "{X} of {Y} {niche}s in {city} have a website").
+- Micro-commitment CTA: "Reply 'interested'" not "happy to jump on a call".
+- Banned phrases: "if you're interested", "no pressure", "happy to", "feel free", "no obligation", "don't hesitate".
+- Two angles (auto-select based on data.json website field):
+  - No website: "Competitors with websites get the customers who search Google. You are missing them."
+  - Bad/template website: "Your site looks like a template. Customers close it in 3 seconds."\
+"""
+
+SITE_COPY_RULES: str = """\
+- core_values descriptions min 10 words each, must reference a concrete review.
+- FAQ must include at least 1 high-intent pricing question ("How much does {service} cost in {city}?").
+- CTA must use owner name: "Call {owner_short}" not "Call us".
+- service_area required: "{city} and surrounding areas including {suburbs}".
+- Never empty <p></p> tags. Every text element must have real content.
+- Warranty and certifications must be prominently displayed when available in niche_intelligence.\
+"""
+
+FOLLOWUP_ANGLES: dict[str, str] = {
+    "followup_1": "competitor_comparison",
+    "followup_2": "social_proof",
+    "followup_3": "urgency_scarcity",
+}
+
 
 def trade_rules(playbook: dict | None = None) -> str:
     """Return trade terminology rule from playbook if available."""
@@ -52,9 +78,59 @@ def trade_rules(playbook: dict | None = None) -> str:
     )
 
 
-def format_rules(playbook: dict | None = None) -> str:
-    """Return combined rules string for embedding in prompts."""
-    return f"{TONE_RULES}\n{BANNED_WORDS_RULE}{trade_rules(playbook)}"
+def _niche_intelligence_rules(playbook: dict | None = None) -> str:
+    """Return niche intelligence context from playbook if available."""
+    if not playbook:
+        return ""
+    ni = playbook.get("niche_intelligence", {})
+    if not ni:
+        return ""
+    parts: list[str] = []
+    if ni.get("owner_real_problem"):
+        parts.append(f"\n- Owner's real problem: {ni['owner_real_problem']}")
+    if ni.get("customer_deal_breakers"):
+        parts.append(
+            f"- Customer deal breakers: {', '.join(ni['customer_deal_breakers'])}"
+        )
+    if ni.get("required_certifications"):
+        parts.append(
+            f"- Required certifications: {', '.join(ni['required_certifications'])}"
+        )
+    if ni.get("warranty_standard"):
+        parts.append(f"- Warranty standard: {ni['warranty_standard']}")
+    if ni.get("pricing_format"):
+        parts.append(f"- Pricing format: {ni['pricing_format']}")
+    if ni.get("faq_must_include"):
+        parts.append(
+            f"- FAQ must include: {'; '.join(ni['faq_must_include'][:5])}"
+        )
+    if ni.get("outreach_angle"):
+        parts.append(f"- Outreach angle: {ni['outreach_angle']}")
+    if ni.get("terminology_corrections"):
+        corrections = [
+            f"'{k}' → '{v}'" for k, v in ni["terminology_corrections"].items()
+        ]
+        parts.append(f"- Terminology: {'; '.join(corrections[:5])}")
+    return "\n".join(parts)
+
+
+def format_rules(playbook: dict | None = None, context: str = "") -> str:
+    """Return combined rules string for embedding in prompts.
+
+    Args:
+        playbook: Playbook dict for trade terms and niche intelligence.
+        context: "site" for site copy rules, "outreach" for outreach rules,
+                 empty for base rules only.
+    """
+    base = f"{TONE_RULES}\n{BANNED_WORDS_RULE}{trade_rules(playbook)}"
+    ni = _niche_intelligence_rules(playbook)
+    if ni:
+        base += f"\n{ni}"
+    if context == "outreach":
+        base += f"\n{OUTREACH_RULES}"
+    elif context == "site":
+        base += f"\n{SITE_COPY_RULES}"
+    return base
 
 
 # Lowercase set for fast validation lookups

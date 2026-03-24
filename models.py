@@ -104,6 +104,9 @@ class SchemaDraft(BaseModel):
     about_stats: list[dict] = Field(default_factory=list)
     about_paragraphs: list[str] = Field(default_factory=list)
 
+    # Service area
+    service_area: str = ""
+
     # Optional metadata
     district: str = ""
     specialization: str = ""

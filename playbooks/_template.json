@@ -108,9 +108,27 @@
     "about_from_garage": "From garage to {count} reviews",
     "about_reviews_text": "Today {count} clients rate us {rating} on Google."
   },
+  "service_areas": {},
+  "niche_intelligence": {
+    "owner_pain_points": [],
+    "owner_real_problem": "",
+    "customer_pain_points": [],
+    "customer_deal_breakers": [],
+    "required_certifications": [],
+    "warranty_standard": "",
+    "pricing_format": "",
+    "pricing_ranges": {},
+    "faq_must_include": [],
+    "trust_signals": [],
+    "outreach_angle": "",
+    "terminology_corrections": {}
+  },
   "outreach": {
     "hooks": ["quote", "competitor", "volume", "quality"],
-    "channels": ["whatsapp", "email"]
+    "channels": ["whatsapp", "email"],
+    "followup_schedule": {"followup_1": 2, "followup_2": 4, "followup_3": 6},
+    "max_words_email": 80,
+    "max_words_whatsapp": 50
   },
   "scoring": {
     "_comment": "Optional. Override default thresholds (default: hot=45, warm=28).",

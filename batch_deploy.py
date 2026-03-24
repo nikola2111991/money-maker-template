@@ -61,6 +61,8 @@ def _build_outreach_html(
         "{{ WHATSAPP_DAN0 }}": outreach.get("whatsapp_initial", ""),
         "{{ EMAIL_DAN0 }}": outreach.get("email_initial", ""),
         "{{ FOLLOWUP_1 }}": outreach.get("followup_1", ""),
+        "{{ FOLLOWUP_2 }}": outreach.get("followup_2", ""),
+        "{{ FOLLOWUP_3 }}": outreach.get("followup_3", ""),
         "{{ WHATSAPP_DAN0_ENCODED }}": urllib.parse.quote(outreach.get("whatsapp_initial", "")),
     }
 
@@ -381,7 +383,7 @@ def main() -> None:
                     with open(outreach_path, encoding="utf-8") as f:
                         outreach = json.load(f)
                     # Replace [DEMO_URL] placeholder with real URL
-                    for key in ["whatsapp_initial", "email_initial", "followup_1"]:
+                    for key in ["whatsapp_initial", "email_initial", "followup_1", "followup_2", "followup_3"]:
                         if key in outreach and "[DEMO_URL]" in outreach[key]:
                             outreach[key] = outreach[key].replace("[DEMO_URL]", site_url)
                     with open(outreach_path, "w", encoding="utf-8") as f:

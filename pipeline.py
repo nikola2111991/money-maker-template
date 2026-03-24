@@ -38,7 +38,9 @@ from config import LEADS_DIR
 
 CATEGORIES: list[str] = ["HOT", "WARM", "COOL"]
 FOLLOWUP_SCHEDULE: dict[str, int] = {
-    "followup_1": 2,  # Day 2 after initial contact
+    "followup_1": 2,  # Day 2: competitor comparison
+    "followup_2": 4,  # Day 4: social proof
+    "followup_3": 6,  # Day 6: urgency/scarcity
 }
 VALID_CHANNELS: list[str] = ["whatsapp", "viber", "email", "phone"]
 VALID_HOOKS: list[str] = [
