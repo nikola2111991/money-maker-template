@@ -84,7 +84,8 @@ User gives lead folder. Claude Code does 3 phases:
 | Signal | Action |
 |--------|--------|
 | Last review older than 2 years | Disqualify (likely closed) |
-| Already has professional website (custom, fast, responsive, booking) | Disqualify |
+| Already has professional website (custom design, fast, responsive, has booking/payments, NOT a template) | Disqualify |
+| Has template website (Wix, Squarespace, WordPress theme) | DO NOT disqualify. This is our target customer. |
 | No phone AND no email anywhere online | Disqualify (unreachable) |
 | Wrong niche (scraper picked up wrong business type) | Disqualify |
 | Rating below 3.0 | Disqualify |
@@ -98,6 +99,23 @@ User gives lead folder. Claude Code does 3 phases:
 - Check competitor_report.json, look at top 2-3 competitors with sites
 - Extract concrete work from reviews (use trade terminology from playbook trade_terms)
 - Update schema_draft.json with all new data
+- **Rescore lead** if research reveals new info (website found, socials found, etc.)
+
+**Phase 2 AUTO-DECISIONS (never ask user, always decide yourself):**
+
+| Discovery | Action |
+|-----------|--------|
+| Scraper said "no website" but website exists AND is professional (custom, fast, booking) | Disqualify → move to COOL/, log reason, done |
+| Scraper said "no website" but website exists AND is template/bad | Keep processing. Recalculate score: remove no_website(15), add bad_website(12) or mediocre_website(6). Angle: "template replacement" |
+| Scraper said "no website" but website exists AND is decent | Disqualify → COOL/ |
+| Score drops below 28 after rescore | Move to COOL/, done |
+| Score drops below 45 (was HOT, now WARM) | Move to WARM/, continue Phase 3 from WARM |
+| Score stays HOT after rescore | Continue Phase 3 |
+| Brand name mismatch (Google listing vs website) | Note in schema_draft.json brand_notes field, continue. This is a SELLING POINT (brand confusion = problem we solve) |
+| Owner name found | Add to schema_draft.json, use in outreach personalization |
+| Multiple businesses at same address | Pick the one matching niche, disqualify others |
+
+**RULE: Never ask user for decisions during per-lead processing. Always decide based on the table above. If edge case not covered, default to: continue processing, add note in schema_draft.json.**
 
 **Phase 3: Build + Deploy (2-3min)**
 - Generate site copy: hero, about story, services, FAQ, benefits
