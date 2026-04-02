@@ -35,30 +35,175 @@ TONE_RULES: str = """\
 
 BANNED_WORDS_RULE: str = f"- Banned words: {', '.join(BANNED_WORDS)}."
 
-OUTREACH_RULES: str = """\
-- Email max 80 words, WhatsApp max 3 sentences.
-- Economic angle required: lead with "competitors with websites get Google traffic you are missing".
-- Must contain 1 competitor stat from competitor_report (e.g. "{X} of {Y} {niche}s in {city} have a website").
-- Micro-commitment CTA: "Reply 'interested'" not "happy to jump on a call".
-- Banned phrases: "if you're interested", "no pressure", "happy to", "feel free", "no obligation", "don't hesitate".
-- Two angles (auto-select based on data.json website field):
-  - No website: "Competitors with websites get the customers who search Google. You are missing them."
-  - Bad/template website: "Your site looks like a template. Customers close it in 3 seconds."\
+OUTREACH_RULES_TEMPLATE: str = """\
+CRITICAL TONE RULE:
+- Write like a real person texting, NOT a marketing system.
+- Sound like you genuinely looked at their business and found it interesting.
+- Use casual connectors: "came across", "noticed", "stood out", "caught my eye".
+- NEVER sound like a template with filled-in fields. If it reads like mail merge, rewrite it.
+- Read your message aloud. If it sounds like an ad, it is wrong.
+
+EMAIL (Day 0):
+- Max {max_words_email} words.
+- Structure: (1) How you found them / why reaching out. (2) Specific detail that caught your attention (review quote, trade detail). (3) What you did for them (demo link). (4) Low-pressure CTA. (5) P.S.
+- Demo link framing: "I put together a quick site for you, have a look if you get a sec: {{URL}}"
+- Sign: "Nikola".
+- Always end with P.S. line. Use strongest proof point:
+  "P.S. {{Competitor}} launched their site last month. They now show up first when someone searches '{{niche}} {{city}}'."
+  Or: "P.S. {{N}} of your {{total}} reviews mention {{top_keyword}}. That would make a strong homepage headline."
+
+WHATSAPP (Day 0):
+- Max 3 sentences. Sound like a real text message, not a pitch.
+- Start casual: "Hey {{Owner}}, came across your business..." or "Hey {{Owner}}, was looking at {{niche}}s in {{city}} and..."
+- Then mention ONE specific thing that stood out (review detail, years in business, specific service).
+- End with demo link, casual CTA.
+- Separate each sentence with a blank line for readability.
+- Sign: "Nikola".
+
+SUBJECT LINE:
+- Max 8 words. Curiosity gap.
+- Patterns: "{{Owner}}, noticed something about your competitors" / "{{N}} of {{total}} {{niche}}s in {{city}} have this" / "{{Reviewer}} wrote something about {{Business}}"
+- BANNED in subject: business name alone, "website", "demo", "Quick question", "Following up".
+
+OPENER APPROACH (choose based on lead data, never same for consecutive leads):
+- Strong reviews: Lead with a specific review that stood out. Mention reviewer name + what they said, naturally.
+- No website but competitors have one: Mention you were looking at {{niche}}s in {{city}} and noticed they do not show up online.
+- Long tenure: Reference their years in business as something impressive.
+- Default: Start with how you came across them. "Hey {{Owner}}, was looking at {{niche}}s in {{city}} and came across your business."
+- IMPORTANT: Do NOT use rigid template patterns. Write each opener differently. If two openers in a row start the same way, rewrite one.
+
+CTA (rotate per lead, keep casual and low-pressure):
+1. "Have a look when you get a sec."
+2. "Let me know what you think."
+3. "Worth a look?"
+4. "Happy to jump on a quick call if easier."
+
+DATA TO USE (from scraper output, use ALL available data):
+- competitor_report.json: use NAMED competitor (top_konkurenti[0].naziv) + their review count + website URL.
+- review_analysis.json: use top_keywords for "{{N}} customers mentioned {{keyword}}".
+- reviews[]: pick best review, quote reviewer by name + specific work using trade terms.
+- review_velocity: if high, mention "You are getting {{N}} new reviews per month. That momentum deserves visibility."
+- premium_location: if true, "Homeowners in {{area}} search online before calling."
+- competitor avg_rating: if lead's rating > avg, "Average {{niche}} in {{city}} has {{X}} rating. You have {{Y}}."
+- years_in_business: if available, weave into message. "You have been {{niche}} for {{N}} years" adds credibility. Use in about_story and outreach.
+- services: if available, mention their SPECIFIC service in outreach instead of generic "your business." E.g. "Your waterproofing and bathroom renovations deserve their own page" not "your services."
+
+PERSONALIZATION:
+- Every message MUST reference 1 specific detail: a reviewer name + what they said, OR a specific service, OR years in business.
+- Weave it in naturally: "Carol McGrath's review about the bathroom waterproofing stood out" NOT "{{Reviewer}} mentioned {{specific_work}}."
+- Trade terms from review: "waterproofed and retiled full ensuite" not "did bathroom work".
+- NEVER "your reviews are great" or "based on your X reviews".
+
+FOLLOW-UPS (keep casual, sound like a real person checking in):
+- Day 2 (followup_1): "Hey {{Owner}}, just checking if you had a chance to look at that site I sent. Your competitor {{competitor}} has {{N}} reviews and a full website. Worth comparing."
+- Day 4 (followup_2): Share something useful, not salesy. "Thought you might find this interesting: {{N}} of your customers mentioned {{keyword}}. That would make a strong homepage headline."
+- Day 6 (followup_3): Max 2 sentences. Casual close. "No stress if it is not for you. I am moving on to other {{niche}}s in {{city}} next week, just wanted to give you first look."
+
+OUTREACH ANGLE (use as guidance, weave naturally into message):
+- No website: They are invisible on Google. Competitors with sites get the search traffic.
+- Template/bad website: Their site looks outdated or generic. Customers leave quickly.
+- Has website but weak: Site exists but has no reviews, no photos, no real content.
+- Long tenure + no website: Years of great work with no online presence to show for it.
+- Has Instagram but inactive: Social presence exists but is dormant. Customers notice.
+- Has Facebook but no website: Social following with nowhere to send them.
+
+BANNED:
+- "if you're interested", "no pressure", "feel free", "no obligation", "don't hesitate"
+- "There is a demo at", "I built you a website/demo", "I created this for you"
+- "I noticed that", "I wanted to reach out" (too corporate)
+- "Reply 'interested'", "Reply 'yes'" (sounds like a bot)
+- Em dashes, emojis, AI phrases, prices
+- Same structure for 3+ leads in a row\
+"""
+
+SUBJECT_LINE_RULES: str = """\
+- Max 8 words. Curiosity gap.
+- Patterns: curiosity / proof / review reference.
+- BANNED: business name alone, "website", "demo", "Following up", "Quick question".\
 """
 
 SITE_COPY_RULES: str = """\
-- core_values descriptions min 10 words each, must reference a concrete review.
-- FAQ must include at least 1 high-intent pricing question ("How much does {service} cost in {city}?").
-- CTA must use owner name: "Call {owner_short}" not "Call us".
-- service_area required: "{city} and surrounding areas including {suburbs}".
-- Never empty <p></p> tags. Every text element must have real content.
-- Warranty and certifications must be prominently displayed when available in niche_intelligence.\
+HERO:
+- hero_headline: Max 10 words. Answer the question the customer would type into Google.
+- Write from the customer's perspective, not praise for the owner.
+- If top_keywords available, use the most frequent keyword in the headline.
+- hero_subtitle: One sentence expanding on headline. MUST include city name.
+
+ABOUT:
+- about_headline: Max 8 words. Reference years in business, review count, or specialization.
+- about_subtitle: One sentence summarizing the business.
+- about_story: 2-3 paragraphs. Start with a specific moment: first job, a problem solved, a turning point.
+  Use specific details from reviews and services. Make it feel authentic.
+  NEVER start with "Founded in", "Established in", or "With X years of experience".
+  NEVER end a paragraph with a generic forward-looking statement.
+- about_blockquote: Paraphrase the best customer review using trade terminology.
+  Use the customer's voice, not the owner's. Include reviewer name.
+- about_stats: Array of 2-4 objects with "value" (string) and "label".
+  Use REAL data: founding year, rating, review count, years in business.
+  If review_velocity available, add as stat.
+  If competitor avg_rating available and lead's rating is higher, add "Above {city} average".
+
+CORE VALUES:
+- Exactly 3 objects with "title", "description", and "ikona" fields.
+- ikona must be one of: "heart", "clock", "check", "shield".
+- Each description MUST be at least 10 words and reference something concrete from customer reviews.
+- Use trust_signals from niche_intelligence for titles when available.
+
+BENEFITS:
+- benefits_headline: Why clients choose this business (max 8 words).
+- Each benefit should address a customer_pain_point from niche_intelligence.
+
+SERVICES:
+- services_subtitle: One sentence about their service range.
+- Use trade terminology from playbook trade_terms in all service descriptions.
+
+FAQ:
+- Array of 3-5 objects with "question" and "answer".
+- Questions real customers would ask. Each answer: one concrete sentence, then CTA.
+- MUST include at least 1 pricing question ("How much does {service} cost in {city}?").
+  Use pricing_ranges from niche_intelligence for realistic answer ranges.
+- MUST address customer_deal_breakers from niche_intelligence.
+- Include faq_must_include questions from niche_intelligence.
+
+CONTACT:
+- contact_subtitle: One sentence encouraging contact.
+  MUST include owner's first name: "Call {owner_short}" not "Call us".
+  NEVER "don't hesitate", "feel free", "no obligation".
+
+SERVICE AREA:
+- service_area: "{city} and surrounding areas including {3-5 nearby suburbs}".
+  Use suburbs from playbook service_areas.
+  If premium_location, emphasize the premium area.
+
+IMAGES:
+- Hero image: ALWAYS use local photo from photos/ directory. NEVER Unsplash placeholder.
+- Service/benefit images: local photos first, then playbook image_map, then cycle_images.
+
+SCARCITY:
+- If review_velocity is high (2+ per month), add urgency: "Currently booking {N} weeks out."
+- If premium_location, mention area demand: "High demand in {area}. Book early."
+
+FAQ QUALITY:
+- Each answer: max 2 sentences. One concrete fact with number/timeframe/price, one CTA.
+- Never generic answers. Every answer must contain a specific number, timeframe, or price range.
+
+COPY PROGRESSION:
+- Hero = confidence (rating + search-intent headline).
+- About = connection (specific moment + review quote).
+- FAQ = reassurance (deal breakers answered with concrete data).
+- CTA = action (owner name + urgency signal).
+
+GENERAL:
+- Be specific. Use real details from the business data.
+- No generic marketing fluff. Every sentence should reference something concrete.
+- Warranty and certifications must be prominently displayed when available.
+- Never empty <p></p> tags. Every text element must have real content.\
 """
 
 FOLLOWUP_ANGLES: dict[str, str] = {
     "followup_1": "competitor_comparison",
-    "followup_2": "social_proof",
-    "followup_3": "urgency_scarcity",
+    "followup_2": "industry_insight",
+    "followup_3": "casual_close",
 }
 
 
@@ -127,9 +272,14 @@ def format_rules(playbook: dict | None = None, context: str = "") -> str:
     if ni:
         base += f"\n{ni}"
     if context == "outreach":
-        base += f"\n{OUTREACH_RULES}"
+        max_words = 80
+        if playbook:
+            max_words = playbook.get("outreach", {}).get("max_words_email", 80)
+        base += "\n" + OUTREACH_RULES_TEMPLATE.format(max_words_email=max_words)
     elif context == "site":
         base += f"\n{SITE_COPY_RULES}"
+    elif context == "subject":
+        base += f"\n{SUBJECT_LINE_RULES}"
     return base
 
 

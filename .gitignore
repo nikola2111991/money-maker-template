@@ -1,5 +1,14 @@
 .env
 __pycache__/
 *.pyc
-auto-leads-checkpoint/
 .DS_Store
+leads/
+out/
+_builds/
+auto-leads-checkpoint/
+_pipeline_status.json
+_research_checkpoint.json
+_enrich_checkpoint.json
+_deploy_report.csv
+*.egg-info/
+.pytest_cache/

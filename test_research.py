@@ -115,7 +115,7 @@ class TestValidateClaudeFields:
             "years_in_business": 15,
             "facebook": "https://www.facebook.com/smithplumbing",
             "instagram": "https://www.instagram.com/smithplumbing",
-            "email": "john@smith.com",
+            "email": "john@gmail.com",
             "services": ["bathroom", "kitchen"],
             "licensed": True,
         }
@@ -124,7 +124,7 @@ class TestValidateClaudeFields:
         assert result["years_in_business"] == 15
         assert result["facebook"] == "https://www.facebook.com/smithplumbing"
         assert result["instagram"] == "https://www.instagram.com/smithplumbing"
-        assert result["email"] == "john@smith.com"
+        assert result["email"] == "john@gmail.com"
         assert result["extra_services"] == ["bathroom", "kitchen"]
         assert result["licensed"] is True
 

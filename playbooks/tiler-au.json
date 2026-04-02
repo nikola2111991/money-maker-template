@@ -38,8 +38,19 @@
   ],
   "exclude_words": [
     "tile shop", "tile store", "tile warehouse", "tile sale",
-    "tile supplies", "tile showroom", "pool builder", "roofing",
-    "carpet", "flooring shop", "hardware store"
+    "tile supplies", "tile showroom", "tile outlet", "tile centre", "tile center",
+    "pool builder", "roofing", "roof restoration",
+    "carpet", "carpet cleaning", "flooring shop", "flooring store",
+    "hardware store", "hardware",
+    "handyman", "painting", "painter", "plumber", "plumbing",
+    "electrician", "electrical", "cleaning", "cleaning service",
+    "lawn", "landscaping", "gardening", "fencing",
+    "pest control", "removalist", "moving",
+    "building supplies", "bathroom supplies", "kitchen supplies",
+    "franchise", "call centre", "call center",
+    "glass", "glazier", "window", "blinds", "curtain",
+    "concrete", "concreting", "demolition",
+    "real estate", "property management"
   ],
   "premium_locations": [
     "Mosman", "Double Bay", "Bondi", "Manly", "Neutral Bay",
@@ -156,7 +167,7 @@
     "photo-1600566753190-17f0baa2a6c3",
     "photo-1618221195710-dd6b41faaea6"
   ],
-  "default_image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80",
+  "default_image": "",
   "theme_rules": {
     "performance": ["commercial", "large format", "levelling system"],
     "specialist": ["natural stone", "marble", "travertine", "heritage", "mosaic"],
@@ -249,13 +260,13 @@
     "process_step1_title": "Call",
     "process_step1_text": "Book a free quote by calling {phone} or via WhatsApp.",
     "process_step2_title": "Quote",
-    "process_step2_text": "{owner} measures up and gives you a fixed price quote, no obligation.",
+    "process_step2_text": "{owner} measures up and gives you a fixed price quote.",
     "process_step3_title": "Result",
     "process_step3_text": "Professional tiling with warranty. As {count} happy customers confirm.",
     "cta_free_quote": "Get a free quote",
     "cta_ready": "Ready for a quote?",
     "cta_ready_services": "Ready to get started?",
-    "cta_no_obligation": "Call for a free, no obligation quote.",
+    "cta_no_obligation": "Call for a free quote.",
     "cta_fast_response": "We respond quickly and can start sooner than you think.",
     "cta_meet_team": "Meet the team",
     "cta_meet_team_sub": "Book a quote and see our work firsthand.",
@@ -273,6 +284,7 @@
     "about_from_garage": "From first job to {count} reviews",
     "about_reviews_text": "Today {count} customers rate us {rating} on Google."
   },
+  "directory_sites": ["YellowPages", "TrueLocal", "HiPages"],
   "service_areas": {
     "Sydney": ["Parramatta", "Blacktown", "Liverpool", "Penrith", "Hornsby"],
     "Melbourne": ["Footscray", "Brunswick", "Box Hill", "Dandenong", "Ringwood"],

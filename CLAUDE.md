@@ -95,6 +95,15 @@ make scrape PLAYBOOK=playbooks/tiler-au.json
 
 Scraper runs Google Places API, checks site quality (12 signals), scores leads, pulls SerpApi reviews for HOT+WARM (graceful fallback if quota exhausted), saves to folders: HOT/, WARM/, COOL/.
 
+### Lead Shortcut
+
+User can say `Obradi lead: HOT/003` (or just `HOT/003`). Claude Code:
+1. Lists `~/Documents/money-maker/leads/HOT/`
+2. Finds folder starting with `003_`
+3. Uses full path for processing
+
+Same works for WARM/ and COOL/.
+
 ### Step 2: Per-lead processing (Claude Code)
 User gives lead folder. Claude Code does 3 phases:
 
@@ -148,26 +157,27 @@ User gives lead folder. Claude Code does 3 phases:
 - Generate outreach HTML with personalized messages
 - **ALWAYS at the end: `open {lead_folder}/outreach.html`** to show the outreach page in browser
 
-**SITE GENERATION RULES (read from playbook niche_intelligence):**
-- Hero image: use photos/photo_01.jpg from lead folder. NEVER Unsplash placeholder.
-- core_values: each MUST have description (min 10 words) referencing a concrete review.
-- FAQ: include questions from `niche_intelligence.faq_must_include`. At least 1 pricing question ("How much does {service} cost in {city}?").
-- CTA: "Call {owner_short}" not "Call us" or "Call {phone}".
-- service_area: "{city} and surrounding areas including {3-5 nearby suburbs}" from playbook `service_areas`.
-- Warranty: prominently display `niche_intelligence.warranty_standard`.
-- Certifications: add section with `niche_intelligence.required_certifications`.
-- Pricing: use `niche_intelligence.pricing_ranges` for min/max display format.
-- Never empty `<p></p>` tags.
+**SITE GENERATION RULES (source of truth: prompt_rules.py):**
+- Hero: lokalna slika iz photos/, NIKAD Unsplash. Headline max 10 reci, customer perspective.
+- core_values: 3 komada, svaki min 10 reci, referenca na konkretan review.
+- FAQ: iz niche_intelligence.faq_must_include + min 1 pricing pitanje sa realnim rangom.
+- CTA: "Call {owner_short}" ne "Call us". NIKAD "no obligation", "feel free", "don't hesitate".
+- service_area: "{city} and surrounding areas including {suburbs}" iz playbook service_areas.
+- Warranty + certifications iz niche_intelligence prominentno.
+- Pricing: iz niche_intelligence.pricing_ranges za FAQ odgovore.
+- Koristi review_analysis.json top_keywords za headline, review_velocity za stats.
+- Koristi customer_deal_breakers za FAQ, customer_pain_points za benefits.
 
-**OUTREACH RULES:**
-- Angle: economic impact, not semantics. Lead with competitor data.
-- Email max 80 words. WhatsApp max 3 sentences.
-- CTA: micro-commitment ("Reply 'interested'"), not "happy to jump on a call".
-- Include 1 competitor stat: "{X} of {Y} {niche}s in {city} have a website".
-- Follow-up schedule: Day 0 (pitch), Day 2 (competitor comparison), Day 4 (social proof), Day 6 (urgency).
-- Two outreach angles (auto-selected from data.json):
-  - No website: "Competitors with websites get the customers who search Google. You are missing them."
-  - Bad/template website: "Your website looks like a template from 2018. Customers close it in 3 seconds."
+**OUTREACH RULES (source of truth: prompt_rules.py):**
+- Email max 40 words. WhatsApp max 3 sentences.
+- OBAVEZNO: 1 review citat sa imenom reviewera + trade term.
+- OBAVEZNO: imenuj konkurenta iz competitor_report (ime + review count + website).
+- Demo: "There is a demo at {URL}" ne "I built".
+- Subject: curiosity gap. BANNED: business name, "website", "demo".
+- Potpis: uvek "Nikola".
+- WhatsApp otvara sa review citatom, email sa imenovanim konkurentom.
+- Koristi review_analysis.json top_keywords i review_velocity za personalizaciju.
+- Follow-ups: Day 2 (competitor), Day 4 (industry insight), Day 6 (urgency).
 
 ### Step 3: Outreach (manual)
 ```
@@ -226,18 +236,6 @@ Score < 50 = bad website (is_bad: true).
 5 pages: index.html, services.html, about.html, contact.html, 404.html
 Base template: base.html. Outreach: outreach-template.html.
 6 themes: trusted, modern, performance, family, specialist, clean.
-
-## Outreach Style
-
-- PAIN POINT → PROOF → SOLUTION structure (not compliment first)
-- Economic angle: "competitors with websites get the Google traffic you are missing"
-- Include 1 competitor stat from competitor_report.json
-- Quote specific review by name with concrete work mentioned
-- Trade terminology from playbook trade_terms
-- Micro-commitment CTA: "Reply 'interested'" not "happy to jump on a call"
-- Email max 80 words. WhatsApp max 3 sentences.
-- Never: em dashes, emojis, AI phrases, price mentions, "if you're interested", "no pressure", "happy to", "feel free"
-- Clean URLs (no markdown links)
 
 ## Deploy
 

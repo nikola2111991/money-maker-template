@@ -63,6 +63,8 @@ def _build_outreach_html(
         "{{ FOLLOWUP_1 }}": outreach.get("followup_1", ""),
         "{{ FOLLOWUP_2 }}": outreach.get("followup_2", ""),
         "{{ FOLLOWUP_3 }}": outreach.get("followup_3", ""),
+        "{{ EMAIL_PS }}": outreach.get("email_ps", ""),
+        "{{ CHANNELS }}": ",".join(playbook.get("outreach", {}).get("channels", ["whatsapp", "email"])),
         "{{ WHATSAPP_DAN0_ENCODED }}": urllib.parse.quote(outreach.get("whatsapp_initial", "")),
     }
 

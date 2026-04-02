@@ -10,7 +10,7 @@
 <meta property="og:description" content="{{ data.about_subtitle|default('') }} {{ data.name_genitive|default(data.name|default('')) }}.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ data.base_url|default('') }}/about.html">
-<meta property="og:image" content="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}">
+<meta property="og:image" content="{{ data.hero_image|default('') }}">
 <meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
 {% endblock %}
 
@@ -55,7 +55,7 @@
   <div class="section-inner">
     <div class="about-split fade-in">
       <div class="about-image">
-        <img data-fallback="mechanic" src="{{ data.about_image|default(data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=600&q=80', true), true) }}" alt="{{ data.owner|default('') }}" loading="lazy" width="450" height="600">
+        <img data-fallback src="{{ data.about_image|default(data.hero_image|default('', true), true) }}" alt="{{ data.owner|default('') }}" loading="lazy" width="450" height="600">
       </div>
       <div class="about-text">
         <span class="section-label">{{ data.i18n.our_story|default('Our story') }}</span>
@@ -82,7 +82,7 @@
         <p class="about-paragraph">{{ data.i18n.about_reviews_text|default('Today {count} clients rate us {rating} on Google.')|replace('{count}', data.review_count|default(0)|string)|replace('{rating}', data.rating|string) }}</p>
         {% endif %}
 
-        {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-primary" style="margin-top:24px">{{ data.i18n.cta_no_obligation|default('Call and book an appointment. No obligation.') }}</a>{% else %}<a href="contact.html" class="btn-primary" style="margin-top:24px">{{ data.i18n.book|default('Book') }}</a>{% endif %}
+        {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-primary" style="margin-top:24px">{{ data.i18n.cta_no_obligation|default('Call and book an appointment. Free diagnosis.') }}</a>{% else %}<a href="contact.html" class="btn-primary" style="margin-top:24px">{{ data.i18n.book|default('Book') }}</a>{% endif %}
       </div>
     </div>
   </div>

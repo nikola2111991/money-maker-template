@@ -41,6 +41,23 @@ log = logging.getLogger(__name__)
 
 CHECKPOINT_FILE = "_research_checkpoint.json"
 
+
+def _has_valid_mx(email: str) -> bool:
+    """Check if email domain has MX records.
+
+    Returns True if MX exists OR if dns.resolver is unavailable (fail open).
+    """
+    try:
+        import dns.resolver
+    except ImportError:
+        return True  # Can't check, assume valid
+    try:
+        domain = email.split("@")[1]
+        dns.resolver.resolve(domain, "MX")
+        return True
+    except Exception:
+        return False
+
 # Fields we try to fill
 RESEARCH_FIELDS = [
     "owner",
@@ -251,8 +268,25 @@ def _validate_claude_fields(data: dict[str, Any], business_name: str) -> dict[st
 
     email = data.get("email", "")
     if email and isinstance(email, str) and "@" in email:
-        if not any(x in email.lower() for x in ["example", "noreply", "test@"]):
+        email_lower = email.lower()
+        # Reject fake/generic emails
+        reject_patterns = ["example", "noreply", "test@", "no-reply"]
+        generic_prefixes = ["info@", "admin@", "sales@", "hello@", "support@", "office@"]
+        if any(x in email_lower for x in reject_patterns):
+            pass
+        elif any(email_lower.startswith(g) for g in generic_prefixes):
+            log.info("Rejected generic email prefix: %s", email)
+        elif _has_valid_mx(email):
             validated["email"] = email
+        else:
+            log.info("Rejected email (no MX record): %s", email)
+
+    mobile = data.get("mobile", "")
+    if mobile and isinstance(mobile, str) and len(mobile) >= 10:
+        # Basic sanity: starts with + or digit, has enough digits
+        cleaned = re.sub(r"[^\d+]", "", mobile)
+        if len(cleaned) >= 10:
+            validated["mobile"] = cleaned
 
     services = data.get("services", [])
     if isinstance(services, list) and services:
@@ -272,6 +306,7 @@ def _validate_claude_fields(data: dict[str, Any], business_name: str) -> dict[st
 def _research_batch_with_claude(
     batch: list[dict[str, Any]],
     niche: str,
+    playbook: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Research multiple businesses via single Claude CLI call.
 
@@ -313,7 +348,8 @@ For each business, search the internet and find:
 - founded_year: Year business was established (integer).
 - facebook: Their Facebook page/profile URL (NOT posts/photos/videos/events).
 - instagram: Their Instagram profile URL (NOT posts/reels/stories).
-- email: Business contact email (NOT noreply or example addresses).
+- email: Business contact email. Search IN ORDER: (1) Contact/About page of their website, (2) Facebook page "About" section, (3) Instagram bio, (4) Business directories ({", ".join(playbook.get("directory_sites", [])) if playbook else "local directories"}). Personal email preferred (owner@, firstname@). REJECT: noreply@, info@, admin@, sales@, hello@, support@.
+- mobile: Owner's mobile number. Mobile numbers start with {", ".join(playbook.get("mobile_prefixes", [])) if playbook else "mobile prefix"} after country code. Check: website contact page, Facebook About, Instagram bio. Do NOT return landline/office numbers.
 - services: Up to 5 specific services they offer.
 - licensed: true ONLY if explicitly stated somewhere.
 
@@ -328,6 +364,7 @@ Format:
     "facebook": "https://www.facebook.com/pagename",
     "instagram": "https://www.instagram.com/handle",
     "email": "contact@example.com",
+    "mobile": "+61400000000",
     "services": ["service1", "service2"],
     "licensed": true
   }}
@@ -376,9 +413,12 @@ class ResearchResult:
     category_changed: bool = False
 
 
-def _load_lead_data(folder: str) -> tuple[dict[str, Any], dict[str, Any]]:
+def _load_lead_data(folder: str) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """Load schema_draft.json and data.json for a lead folder."""
     schema_path = os.path.join(folder, "schema_draft.json")
+    if not os.path.exists(schema_path):
+        log.warning("  Skipping %s: schema_draft.json not found", os.path.basename(folder))
+        return None, None
     with open(schema_path, encoding="utf-8") as f:
         schema = json.load(f)
 
@@ -488,6 +528,13 @@ def research_lead(
             if parts:
                 schema["owner_short"] = parts[0]
             fields_added.append(field_name)
+        elif field_name == "mobile":
+            # Only set if no existing mobile
+            if not schema.get("phone") and not data_json.get("mobile"):
+                schema["phone"] = value
+                schema["phone_display"] = value
+                data_json["mobile"] = value
+                fields_added.append("mobile")
         elif field_name in ("facebook", "instagram", "email"):
             schema[field_name] = value
             data_json[field_name] = value
@@ -765,6 +812,9 @@ def main() -> None:
 
         for lead in batch_leads:
             schema, data_json = _load_lead_data(lead["folder"])
+            if schema is None:
+                print(f"  Skipping {lead['key']}: no schema_draft.json")
+                continue
             name = schema.get("name", "") or data_json.get("name", "")
             city = schema.get("city", "") or data_json.get("city", "")
             website = schema.get("website", "") or data_json.get("website", "")
@@ -778,7 +828,7 @@ def main() -> None:
         if claude_batch:
             print(f"  Sending {len(claude_batch)} leads to Claude CLI...")
             t0 = time.time()
-            claude_results = _research_batch_with_claude(claude_batch, niche)
+            claude_results = _research_batch_with_claude(claude_batch, niche, playbook=playbook)
             timing["claude"] += time.time() - t0
             found_count = sum(1 for v in claude_results.values() if v)
             print(f"  Claude found data for {found_count}/{len(claude_batch)} leads")

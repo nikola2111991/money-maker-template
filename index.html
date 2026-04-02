@@ -9,7 +9,7 @@
 <meta property="og:description" content="{% if data.specialization %}{{ data.specialization }}. {% endif %}{{ data.i18n.google_rating|default('Google rating') }} {{ data.rating|default(0) }} - {{ data.review_count|default(0) }} {{ data.i18n.satisfied_clients|default('satisfied clients') }}.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ data.base_url|default('') }}/">
-<meta property="og:image" content="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}">
+<meta property="og:image" content="{{ data.hero_image|default('') }}">
 <meta property="og:locale" content="{{ data.i18n.locale|default('en_US') }}">
 {% endblock %}
 
@@ -21,7 +21,7 @@
   "@context": "https://schema.org",
   "@type": "{{ data.schema_type|default('LocalBusiness') }}",
   "name": "{{ data.name|default('')|json_val }}",
-  "image": "{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80', true) }}",
+  "image": "{{ data.hero_image|default('') }}",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "{{ data.address|default('')|json_val }}",
@@ -44,6 +44,26 @@
   }
 }
 </script>
+{% if data.faq %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for faq in data.faq %}
+    {
+      "@type": "Question",
+      "name": "{{ faq.question|default('')|json_val }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ faq.answer|default('')|json_val }}"
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -62,7 +82,7 @@
       </div>
     </div>
     <div class="hero-image">
-      <img data-fallback src="{{ data.hero_image|default('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=800&q=80', true) }}" alt="{{ data.name|default('Servis') }} - {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}" loading="eager" fetchpriority="high" width="800" height="600">
+      <img data-fallback src="{{ data.hero_image|default('') }}" alt="{{ data.name|default('Servis') }} - {% if data.district %}{{ data.district }}, {% endif %}{{ data.city|default('') }}" loading="eager" fetchpriority="high" width="800" height="600">
       <div class="hero-image-badge">
         <span class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span> {{ data.rating|default(0) }}/5
       </div>
@@ -156,7 +176,7 @@
       <div class="process-step fade-in">
         <div class="process-number">2</div>
         <h3>{{ data.i18n.process_step2_title|default('Review') }}</h3>
-        <p>{{ data.i18n.process_step2_text|default('{owner} reviews and gives a diagnosis, no obligation.')|replace('{owner}', data.owner_short|default('')) }}</p>
+        <p>{{ data.i18n.process_step2_text|default('{owner} reviews and gives a clear diagnosis.')|replace('{owner}', data.owner_short|default('')) }}</p>
       </div>
       <div class="process-step fade-in">
         <div class="process-number">3</div>
@@ -239,7 +259,7 @@
 
 <section class="cta-banner">
   <h2>{{ data.i18n.cta_ready_services|default('Ready to book a service?') }}</h2>
-  <p>{{ data.i18n.cta_no_obligation|default('Call and book an appointment. No obligation.') }}</p>
+  <p>{{ data.i18n.cta_no_obligation|default('Call and book an appointment. Free diagnosis.') }}</p>
   {% if data.phone %}<a href="tel:{{ data.phone_prefix|default('+1') }}{{ data.phone }}" class="btn-white">{{ data.i18n.call|default('Call') }}: {{ data.phone_display|default(data.phone) }}</a>{% else %}<a href="contact.html" class="btn-white">{{ data.i18n.contact_us|default('Contact') }}</a>{% endif %}
 </section>
 {% endblock %}

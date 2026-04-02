@@ -12,12 +12,13 @@
 {% block meta_extra %}{% endblock %}
 <link rel="canonical" href="{% block canonical %}{{ data.base_url|default('') }}/{% endblock %}">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='{{ data.theme.favicon_fill|default('%231B2A4A') }}'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='55' font-family='sans-serif'>{{ (data.name|default('S'))[0] }}</text></svg>">
-<link rel="preconnect" href="https://images.unsplash.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" href="{{ data.theme.font_url|default('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Source+Sans+3:wght@400;600;700&display=swap') }}" as="style">
 <link href="{{ data.theme.font_url|default('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Source+Sans+3:wght@400;600;700&display=swap') }}" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 {% if data.theme %}<style>:root{--primary:{{ data.theme.primary|default('#1B2A4A') }};--primary-light:{{ data.theme.primary_light|default('#2d4373') }};--accent:{{ data.theme.accent|default('#4A90A4') }};--accent-light:{{ data.theme.accent_light|default('#5fb3c9') }};--dark:{{ data.theme.dark|default('#0f1923') }};--bg-soft:{{ data.theme.bg_soft|default('#f3f5f8') }};--bg-alt:{{ data.theme.bg_alt|default('#e8ecf2') }};--primary-rgb:{{ data.theme.primary_rgb|default('27,42,74') }};--accent-rgb:{{ data.theme.accent_rgb|default('74,144,164') }};--card-radius:{{ data.theme.card_radius|default('16px') }};--btn-radius:{{ data.theme.btn_radius|default('10px') }};--font-body:{{ data.theme.font_body|default("'Source Sans 3',sans-serif") }};--font-display:{{ data.theme.font_display|default("'Libre Baskerville',serif") }}}</style>{% endif %}
+{% if data.analytics_domain %}<script defer data-domain="{{ data.analytics_domain }}" src="https://plausible.io/js/script.js"></script>{% endif %}
 {% block head_extra %}{% endblock %}
 </head>
 <body>
@@ -56,7 +57,7 @@
 
 <footer>
   <p>&copy; <span id="copyright-year"></span> {{ data.name|default('') }}. {{ data.i18n.footer_rights|default('All rights reserved.') }}</p>
-  <p class="credit">{{ data.i18n.site_credit|default('Site by') }} <a href="https://nikolajanjic.com" target="_blank" rel="noopener noreferrer">Nikola Janjic</a></p>
+  <p class="credit">{{ data.i18n.site_credit|default('Site by') }} <a href="{{ data.credit_url|default('https://nikolajanjic.com') }}" target="_blank" rel="noopener noreferrer">{{ data.credit_name|default('Nikola Janjic') }}</a></p>
 </footer>
 
 {% if data.phone %}

@@ -108,8 +108,8 @@ def _calculate(
         bd["has_mobile"] = 10
         t += 10
     elif phone:
-        bd["has_phone_only"] = 5
-        t += 5
+        bd["has_phone_only"] = 2
+        t += 2
     if email:
         bd["has_email"] = 3
         t += 3

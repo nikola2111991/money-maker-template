@@ -19,7 +19,7 @@ from anthropic import Anthropic, APIError, APITimeoutError, RateLimitError
 
 from config import CAL_COM_URL
 from enrich import validate_enriched
-from prompt_rules import format_rules, FOLLOWUP_ANGLES
+from prompt_rules import format_rules, FOLLOWUP_ANGLES, BANNED_WORDS_SET
 
 log = logging.getLogger(__name__)
 
@@ -62,45 +62,21 @@ def _call_with_retry(client: Anthropic, max_retries: int = 3, **kwargs) -> Any:
 def _site_system_prompt(
     niche: str, language: str, language_name: str, playbook: dict | None = None
 ) -> str:
-    ni = (playbook or {}).get("niche_intelligence", {})
-    faq_hint = ""
-    if ni.get("faq_must_include"):
-        faq_hint = (
-            " Include at least one of these questions: "
-            + "; ".join(ni["faq_must_include"][:3])
-            + "."
-        )
-    warranty_hint = ""
-    if ni.get("warranty_standard"):
-        warranty_hint = f" Mention warranty: {ni['warranty_standard']}."
-    cert_hint = ""
-    if ni.get("required_certifications"):
-        cert_hint = (
-            f" Reference certifications: {', '.join(ni['required_certifications'][:3])}."
-        )
-
     return f"""You are a website copywriter for {niche} businesses. Write in {language_name}.
 
 You generate website copy as a JSON object with these fields:
-- hero_headline: Short, powerful headline (max 10 words). Answer the question this business's CUSTOMER would type into Google. Write from the customer's perspective, not as praise for the owner.
-- hero_subtitle: One sentence expanding on the headline. Include the city name.
-- about_headline: Headline for the About page (max 8 words). Reference years in business, review count, or specialization.
-- about_subtitle: One sentence summarizing the business for the About page.
-- about_story: 2-3 paragraphs. Start with a specific moment: first job, a problem they solved, a turning point. Use specific details from reviews and services. Make it feel authentic. Never start with "Founded in", "Established in", or "With X years of experience". Never end a paragraph with a generic forward-looking statement.
-- about_blockquote: Paraphrase the best customer review. Use the customer's voice, not the owner's. If no reviews provided, describe a scene that captures what makes this business different.
-- core_values: Array of exactly 3 objects with "title", "description", and "ikona" fields. ikona must be one of: "heart", "clock", "check", "shield". Each description must be at least 10 words and reference something concrete from customer reviews.
-- about_stats: Array of 2-4 objects with "value" (number as string) and "label" fields. Use real data: founding year, rating, review count, years in business.
-- benefits_headline: Why clients choose this business (max 8 words)
-- services_subtitle: One sentence about their service range
-- contact_subtitle: One sentence encouraging contact. Must include the owner's first name (e.g. "Call {{owner_short}}"). Never use "don't hesitate" or "feel free".
-- service_area: String describing service area: "{{city}} and surrounding areas including {{3-5 nearby suburbs}}".
-- faq: Array of 3-5 objects with "question" and "answer" fields. Questions real customers would ask. Each answer: one concrete sentence, then a call to action.{faq_hint}{warranty_hint}{cert_hint}
+- hero_headline, hero_subtitle
+- about_headline, about_subtitle, about_story, about_blockquote
+- core_values (array of 3: title, description, ikona)
+- about_stats (array of 2-4: value, label)
+- benefits_headline
+- services_subtitle
+- contact_subtitle
+- service_area
+- faq (array of 3-5: question, answer)
 
-Rules:
-- Be specific. Use real details from the business data.
-- No generic marketing fluff. Every sentence should reference something concrete.
-- Use the tone natural for {language_name} business communication.
 {format_rules(playbook, context="site")}
+- Use the tone natural for {language_name} business communication.
 - Return ONLY valid JSON, no markdown formatting."""
 
 
@@ -108,35 +84,16 @@ def _outreach_system_prompt(
     niche: str, language_name: str, booking_url: str = "", playbook: dict | None = None
 ) -> str:
     booking = booking_url or CAL_COM_URL
-    ni = (playbook or {}).get("niche_intelligence", {})
-    angle = ni.get("outreach_angle", "")
-    angle_hint = f"\nPreferred angle: {angle}" if angle else ""
 
     return f"""You are an outreach copywriter for a web development service targeting {niche} businesses. Write in {language_name}.
 
-Core pain point (use economic framing, not semantics):
-- Competitors with websites get the Google search traffic this business is missing.
-- Every month without a website = customers going to competitors who show up online.
-- Their reviews are great but buried on Google Maps. A website makes them findable.
-- A website filters leads: customers see services, pricing, photos before calling. Fewer tire-kickers, more $3K+ projects.{angle_hint}
-
 You generate outreach messages as a JSON object with these fields:
-- whatsapp_initial: WhatsApp/Viber message (max 3 sentences). (1) Competitor stat from their area. (2) Demo link you built based on their reviews. (3) "Reply 'interested' and I will send details." Sign as "Nikola".
-- email_subject: Email subject line (max 8 words). Reference competitor gap or economic impact, not the solution.
-- email_initial: Email body (max 80 words). (1) Competitor stat. (2) They have great reviews but no website. (3) Quote a specific review by name. (4) Demo link. (5) "Reply 'interested'."
-- followup_1: Day 2 follow-up (max 3 sentences). Angle: {FOLLOWUP_ANGLES['followup_1']}. Name a specific competitor with a website and their review count.
-- followup_2: Day 4 follow-up (max 3 sentences). Angle: {FOLLOWUP_ANGLES['followup_2']}. Reference what you have done for similar businesses (or industry insight if no portfolio yet).
-- followup_3: Day 6 follow-up (max 2 sentences). Angle: {FOLLOWUP_ANGLES['followup_3']}. "Moving to the next city this week. Last chance to grab the demo."
+- whatsapp_initial, email_subject, email_initial, email_ps, followup_1, followup_2, followup_3
 
-Rules:
-- Structure every message as: PAIN POINT → PROOF (you researched them) → SOLUTION (demo site). Never lead with the solution.
-- NEVER mention price or cost. Price is discussed only on a call.
-- Quote or reference a specific customer review by reviewer name.
-- Build trust through specificity, not claims.
-- No generic templates. Every message must feel personalized.
 {format_rules(playbook, context="outreach")}
+- NEVER mention price or cost.
+- Sign all messages as "Nikola".
 - Keep booking link as: {booking}
-- Sign messages as "Nikola" (the service provider).
 - Return ONLY valid JSON, no markdown formatting."""
 
 
@@ -318,6 +275,15 @@ def generate_outreach(
     )
 
     result = _parse_json_response(response.content[0].text)
+
+    # Check for banned words in outreach fields
+    for key in ("whatsapp_initial", "email_initial", "email_subject",
+                "email_ps", "followup_1", "followup_2", "followup_3"):
+        val = result.get(key, "")
+        if isinstance(val, str):
+            found = [w for w in BANNED_WORDS_SET if w in val.lower()]
+            if found:
+                log.warning("  Outreach %s contains banned words: %s", key, found)
 
     # Validate outreach output
     result, warnings = validate_enriched(result)

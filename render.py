@@ -788,7 +788,7 @@ def deploy_to_github(slug: str, output_dir: str) -> str:
 
     if not os.path.isdir(os.path.join(repo_dir, ".git")):
         print(f"  ❌ Repo ne postoji: {repo_dir}")
-        print(f"     Pokreni: git clone https://github.com/nikola2111991/auto-demos.git ~/Documents/auto-demos")
+        print(f"     Set up a GitHub Pages repo and clone it to: {repo_dir}")
         return ""
 
     print(f"\n🚀 Deploy na GitHub Pages: {slug}")

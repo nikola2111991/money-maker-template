@@ -59,10 +59,8 @@ class TestThresholds:
     def test_default_warm_threshold(self):
         assert DEFAULT_WARM == 28
 
-    def test_score_44_is_warm(self):
-        # rating 4.5 (12) + no_website (15) + no_fb (3) + no_ig (2) + mobile (10) = 42
-        # + has_email (3) = 45... need exactly 44
-        # rating 4.5 (12) + no_website (15) + no_fb (3) + no_ig (2) + phone_only (5) + email (3) + photos (2) + hours (2) = 44
+    def test_score_41_is_warm(self):
+        # rating 4.5 (12) + no_website (15) + no_fb (3) + no_ig (2) + phone_only (2) + email (3) + photos (2) + hours (2) = 41
         score, cat, bd = _calculate(
             **_base_args(
                 rating=4.5,
@@ -72,7 +70,7 @@ class TestThresholds:
                 has_hours=True,
             )
         )
-        assert score == 44
+        assert score == 41
         assert cat == "WARM"
 
     def test_score_45_is_hot(self):
@@ -204,9 +202,9 @@ class TestReachability:
         assert bd.get("has_mobile") == 10
         assert "has_phone_only" not in bd
 
-    def test_phone_only_5pts(self):
+    def test_phone_only_2pts(self):
         _, _, bd = _calculate(**_base_args(phone="0212345678"))
-        assert bd.get("has_phone_only") == 5
+        assert bd.get("has_phone_only") == 2
         assert "has_mobile" not in bd
 
     def test_mobile_takes_priority_over_phone(self):

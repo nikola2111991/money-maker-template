@@ -85,12 +85,12 @@
     "process_step1_title": "Call",
     "process_step1_text": "Book an appointment by calling {phone} or via WhatsApp.",
     "process_step2_title": "Review",
-    "process_step2_text": "{owner} reviews and gives a diagnosis, no obligation.",
+    "process_step2_text": "{owner} reviews and gives a clear diagnosis.",
     "process_step3_title": "Result",
     "process_step3_text": "Fast repair with warranty. As {count} satisfied clients confirm.",
     "cta_ready": "Ready to book?",
     "cta_ready_services": "Ready to book a service?",
-    "cta_no_obligation": "Call and book an appointment. No obligation.",
+    "cta_no_obligation": "Call and book an appointment. Free diagnosis.",
     "cta_fast_response": "We respond quickly and schedule at the earliest time.",
     "cta_meet_team": "Come and meet the team",
     "cta_meet_team_sub": "Book an appointment and see for yourself.",
@@ -108,6 +108,7 @@
     "about_from_garage": "From garage to {count} reviews",
     "about_reviews_text": "Today {count} clients rate us {rating} on Google."
   },
+  "directory_sites": [],
   "service_areas": {},
   "niche_intelligence": {
     "owner_pain_points": [],

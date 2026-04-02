@@ -527,6 +527,10 @@ def cmd_convert(
 
     save_status(leads_dir, status)
     print(f"OK: {key} CONVERTED! Deal: {deal_value} EUR ({deal_type})")
+    owner = entry.get("owner", "them")
+    print(f"\n  Referral tip: Ask {owner}:")
+    print(f"     'Know another tradesperson who could use a site like yours?'")
+    print(f"     Referral = free month for them, new lead for you.\n")
 
 
 def cmd_due(leads_dir: Path) -> None:

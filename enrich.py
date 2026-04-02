@@ -141,6 +141,7 @@ def build_enrichment_prompt(
     lang_name = lang_names.get(language, language)
     niche = playbook.get("niche", "business")
     booking_url = playbook.get("booking_url", config.CAL_COM_URL)
+    max_words_email = playbook.get("outreach", {}).get("max_words_email", 80)
 
     # Basic info
     parts = [
@@ -216,6 +217,18 @@ def build_enrichment_prompt(
     if district and any(p.lower() in district.lower() for p in premium_locations):
         parts.append(f"Premium location: Yes ({district})")
 
+    # Social media presence
+    fb = schema.get("facebook") or (data_json or {}).get("facebook", "")
+    ig = schema.get("instagram") or (data_json or {}).get("instagram", "")
+    if fb:
+        parts.append(f"Facebook: {fb}")
+    else:
+        parts.append("Facebook: none")
+    if ig:
+        parts.append(f"Instagram: {ig}")
+    else:
+        parts.append("Instagram: none")
+
     # Digital gap info for outreach
     if not schema.get("website"):
         parts.append(
@@ -251,18 +264,16 @@ If disqualified, include "disqualified_reason" and skip Step 3.
 STEP 3 - GENERATE COPY (only if qualified):
 
 WEBSITE COPY:
-- hero_headline: Short, powerful headline (max 10 words). Answer the question the customer would search for.
-- hero_subtitle: One sentence expanding on headline. Include city name.
-- about_headline: Headline for About section (max 8 words).
-- about_subtitle: One sentence summary.
-- about_story: 2-3 paragraphs. Start with a specific moment from reviews. Use real details. Never start with "Founded in" or "Established in". Never use em dashes.
-- about_blockquote: Paraphrase the best customer review.
-- core_values: Array of exactly 3 objects with "title", "description", "ikona" (one of: heart, clock, check, shield). Each should reference something concrete from reviews.
-- about_stats: Array of 2-4 objects with "value" (string) and "label". Use real data: rating, review count, years, etc.
-- benefits_headline: Why clients choose this business (max 8 words).
-- services_subtitle: One sentence about their service range.
-- contact_subtitle: One sentence encouraging contact. Never use "don't hesitate" or "feel free".
-- faq: Array of 3-5 objects with "question" and "answer". Questions customers ACTUALLY ask (not generic). Focus on customer concerns: cost, timeline, disruption, cleanup, warranty, what could go wrong. {_faq_hints(playbook)}Each answer: one concrete sentence with a real number or timeframe, then a call to action.
+Generate these site copy fields as JSON:
+- hero_headline, hero_subtitle
+- about_headline, about_subtitle, about_story, about_blockquote
+- core_values (array of 3: title, description, ikona)
+- about_stats (array of 2-4: value, label)
+- benefits_headline, services_subtitle, contact_subtitle
+- service_area
+- faq (array of 3-5: question, answer)
+
+{format_rules(playbook, context="site")}
 
 OUTREACH MESSAGES:
 {_hook_hint(schema, data_json)}
@@ -274,18 +285,30 @@ Why this business needs a website (use the most relevant pain points in messages
 - They're paying for Google Business Profile but getting half the value without a website to link to.
 
 OUTREACH RULES:
-- Structure: COMPLIMENT → PAIN POINT → PROOF (demo link). Never lead with the problem.
-- Start WhatsApp with a genuine compliment about a specific review or their work quality.
-- Use a reviewer's actual name in messages (pick the best review).
-- Include competitor numbers if available (e.g. "3 out of 5 competitors in your area have a website").
-- Give a reason for reaching out NOW: "I just finished a project for a {niche} in [other city], researched [this city] market, and noticed your business."
-- Never say "I built you a website". Say "I put together a demo based on your actual reviews."
-- When referencing a review, comment on the specific work mentioned using correct trade terminology for this niche. Show you understand what the work involves, not just that the review exists. Example: instead of "[Name] wrote something great", say "[Name] mentioned you waterproofed and retiled a full shower in 2 days. For large-format tiles with proper membrane work, that's fast."
+- Structure: PAIN POINT → PROOF → SOLUTION. Never lead with solution or compliment.
+- Every message MUST include 1 review quote with reviewer name + trade terminology from playbook.
+- Use NAMED competitor from competitor_report (top_konkurenti[0]) with their review count.
+- Demo link framing: "I put this together for you using your {{N}} reviews: [DEMO_URL]"
 
-- whatsapp_initial: Max 3 sentences. (1) Compliment: reference a specific reviewer by name and what they said. (2) You noticed their reviews deserve more visibility, you put together a demo. (3) Demo link [DEMO_URL]. Sign as "Nikola".
-- email_subject: Max 8 words. Use the reviewer's name or a concrete number. Example: "[Reviewer] wrote something great about you" or "{schema.get("review_count", 0)} reviews, no website?"
-- email_initial: Max 6 sentences. (1) Why you're reaching out today (researching {niche} market in {schema.get("city", "")}). (2) Compliment: specific review quote by reviewer name. (3) Pain: when someone searches "{niche} {schema.get("city", "")}" they don't appear. (4) Competitor context if available. (5) Demo link [DEMO_URL]. (6) No obligation.
-- followup_1: Day 2. Max 3 sentences. DIFFERENT angle from initial message. If initial was about visibility, followup is about a specific detail from their reviews (e.g. "3 customers mentioned [keyword]. That would make a great homepage headline."). Brief, respectful, no repetition of the first message.
+- whatsapp_initial: Max 3 sentences. (1) Opener (see OPENER SELECTION). (2) Demo link with reciprocity framing. (3) CTA (rotate). Separate each sentence with blank line. Sign as "Nikola".
+- email_subject: Max 8 words. Curiosity gap. BANNED: business name alone, "website", "demo". Patterns: "{{Owner}}, noticed something about your competitors" / "{{N}} of {{total}} have this" / "{{Reviewer}} wrote something about {{Business}}".
+- email_initial: Max {max_words_email} words. (1) Opener (see OPENER SELECTION). (2) Review quote with name + trade term. (3) Demo link with reciprocity framing. (4) CTA (rotate). Sign as "Nikola".
+- email_ps: P.S. line with strongest proof point. E.g. "P.S. {{Competitor}} launched their site last month. They now show up first for '{{niche}} {{city}}'."
+- followup_1: Day 2. Max 3 sentences. Name specific competitor with website + review count.
+- followup_2: Day 4. Max 3 sentences. Industry insight or review keyword stat.
+- followup_3: Day 6. Max 2 sentences. "Demo stays live for 7 days, then I take it down. [DEMO_URL]"
+
+OPENER SELECTION (choose based on lead data):
+- If rating >= 4.8 AND reviews > 30: "{{Owner}}, {{N}} reviews and every one is 5 stars. That is rare in {{city}}."
+- If has strong review with trade detail: "{{Owner}}, {{Reviewer}} wrote about the {{specific_work}}. That level of detail is rare."
+- If competitor has website, lead does not: "{{Owner}}, {{N}} of {{total}} {{niche}}s in {{city}} have a website. Yours does not show up."
+- Default: "{{Owner}}, do most of your jobs come from referrals or Google?"
+
+CTA ROTATION (never same for consecutive leads):
+1. "Reply 'interested' and I will walk you through it."
+2. "Reply 'yes' if you want it live."
+3. "Worth a look? Reply and I will send details."
+4. "Reply with your best time for a 5min call."
 
 OWNER (if not provided above):
 - owner: Best guess at owner name from business name or reviews. If impossible, return empty string.
@@ -534,7 +557,7 @@ def merge_enriched(schema: dict, enriched: dict) -> tuple[dict, dict, bool]:
 
     # Save outreach separately
     outreach = {}
-    for key in ["whatsapp_initial", "email_subject", "email_initial", "followup_1"]:
+    for key in ["whatsapp_initial", "email_subject", "email_initial", "email_ps", "followup_1"]:
         if key in enriched and enriched[key]:
             outreach[key] = enriched[key]
             schema.pop(key, None)
@@ -752,7 +775,7 @@ def main() -> None:
             )
             if deploy_result.returncode == 0:
                 slug = schema.get("slug", "")
-                deploy_url = f"https://nikola2111991.github.io/mm-demos/{slug}/"
+                deploy_url = f"{config.DEPLOY_BASE_URL}/{slug}/"
                 log.info("  Deployed: %s", deploy_url)
                 # Update outreach with real URL
                 if outreach:
