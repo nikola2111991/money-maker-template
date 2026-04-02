@@ -43,20 +43,27 @@ CRITICAL TONE RULE:
 - NEVER sound like a template with filled-in fields. If it reads like mail merge, rewrite it.
 - Read your message aloud. If it sounds like an ad, it is wrong.
 
+MESSAGE FLOW (applies to both WhatsApp and Email):
+- Every message MUST follow this logical flow. No skipping steps:
+  1. HOW you found them: "Was looking at {{niche}}s in {{city}} on Google Maps and saw your business."
+  2. WHAT caught your eye: A specific review, their rating, a service they offer.
+  3. THE GAP: What they are missing (no website, outdated site, no online presence). This is the bridge that explains WHY you made them a site.
+  4. WHAT you did: "I put together a quick site for you using your real reviews and photos."
+  5. CTA: Low-pressure, casual.
+- WITHOUT step 3 (the gap), the message makes no sense. "Your review is great, here is a website" has no logic. "Your review is great but you have no website to show it on, so I made one" does.
+
 EMAIL (Day 0):
 - Max {max_words_email} words.
-- Structure: (1) How you found them / why reaching out. (2) Specific detail that caught your attention (review quote, trade detail). (3) What you did for them (demo link). (4) Low-pressure CTA. (5) P.S.
-- Demo link framing: "I put together a quick site for you, have a look if you get a sec: {{URL}}"
+- Follow the 5-step message flow above. Add P.S. with strongest proof point.
 - Sign: "Nikola".
-- Always end with P.S. line. Use strongest proof point:
+- P.S. options:
   "P.S. {{Competitor}} launched their site last month. They now show up first when someone searches '{{niche}} {{city}}'."
   Or: "P.S. {{N}} of your {{total}} reviews mention {{top_keyword}}. That would make a strong homepage headline."
 
 WHATSAPP (Day 0):
-- Max 3 sentences. Sound like a real text message, not a pitch.
-- Start casual: "Hey {{Owner}}, came across your business..." or "Hey {{Owner}}, was looking at {{niche}}s in {{city}} and..."
-- Then mention ONE specific thing that stood out (review detail, years in business, specific service).
-- End with demo link, casual CTA.
+- Max 4 sentences. Sound like a real text message, not a pitch.
+- Follow the 5-step message flow above, but keep it tight.
+- Example flow: "Hey Todd, was looking at tilers in Perth on Google Maps and saw your business. Jayden Chatfield's review about the screeding and waterproofing caught my eye. Looks like you are doing great work but I noticed you do not have a website, so I put together a quick site using your reviews and photos: {{URL}}. Check it out and let me know what you think."
 - Separate each sentence with a blank line for readability.
 - Sign: "Nikola".
 
@@ -65,34 +72,29 @@ SUBJECT LINE:
 - Patterns: "{{Owner}}, noticed something about your competitors" / "{{N}} of {{total}} {{niche}}s in {{city}} have this" / "{{Reviewer}} wrote something about {{Business}}"
 - BANNED in subject: business name alone, "website", "demo", "Quick question", "Following up".
 
-OPENER APPROACH (choose based on lead data, never same for consecutive leads):
-- Strong reviews: Lead with a specific review that stood out. Mention reviewer name + what they said, naturally.
-- No website but competitors have one: Mention you were looking at {{niche}}s in {{city}} and noticed they do not show up online.
-- Long tenure: Reference their years in business as something impressive.
-- Default: Start with how you came across them. "Hey {{Owner}}, was looking at {{niche}}s in {{city}} and came across your business."
-- IMPORTANT: Do NOT use rigid template patterns. Write each opener differently. If two openers in a row start the same way, rewrite one.
+STEP 2 DETAIL (what caught your eye, pick ONE per lead):
+- A specific review: mention reviewer name + what they said using trade terms. "Jayden Chatfield's review about the screeding and waterproofing caught my eye."
+- Their rating or review count: "5.0 with 42 reviews stood out."
+- Years in business: "12 years of tiling with no website is a lot of great work going unseen."
+- A specific service: "Your waterproofing and bathroom renovations deserve their own page."
+- NEVER: "your reviews are great", "based on your X reviews". Be specific, not generic.
+- Use trade terms from reviews: "waterproofed and retiled full ensuite" not "did bathroom work".
 
 CTA (rotate per lead, keep casual and low-pressure):
-1. "Have a look when you get a sec."
-2. "Let me know what you think."
+1. "Check it out and let me know what you think."
+2. "Have a look when you get a sec."
 3. "Worth a look?"
 4. "Happy to jump on a quick call if easier."
 
 DATA TO USE (from scraper output, use ALL available data):
-- competitor_report.json: use NAMED competitor (top_konkurenti[0].naziv) + their review count + website URL.
-- review_analysis.json: use top_keywords for "{{N}} customers mentioned {{keyword}}".
-- reviews[]: pick best review, quote reviewer by name + specific work using trade terms.
-- review_velocity: if high, mention "You are getting {{N}} new reviews per month. That momentum deserves visibility."
+- competitor_report.json: use NAMED competitor + their review count + website URL. Good for step 3 (the gap).
+- review_analysis.json: use top_keywords. Good for P.S. line.
+- reviews[]: pick best review for step 2 (what caught your eye). Quote reviewer by name + specific work.
+- review_velocity: if high, good for P.S. or follow-up.
 - premium_location: if true, "Homeowners in {{area}} search online before calling."
-- competitor avg_rating: if lead's rating > avg, "Average {{niche}} in {{city}} has {{X}} rating. You have {{Y}}."
-- years_in_business: if available, weave into message. "You have been {{niche}} for {{N}} years" adds credibility. Use in about_story and outreach.
-- services: if available, mention their SPECIFIC service in outreach instead of generic "your business." E.g. "Your waterproofing and bathroom renovations deserve their own page" not "your services."
-
-PERSONALIZATION:
-- Every message MUST reference 1 specific detail: a reviewer name + what they said, OR a specific service, OR years in business.
-- Weave it in naturally: "Carol McGrath's review about the bathroom waterproofing stood out" NOT "{{Reviewer}} mentioned {{specific_work}}."
-- Trade terms from review: "waterproofed and retiled full ensuite" not "did bathroom work".
-- NEVER "your reviews are great" or "based on your X reviews".
+- years_in_business: weave into step 2 or step 3 naturally.
+- services: mention specific services, not "your business."
+- facebook/instagram: use for step 3 (the gap) if they have social but no website.
 
 FOLLOW-UPS (keep casual, sound like a real person checking in):
 - Day 2 (followup_1): "Hey {{Owner}}, just checking if you had a chance to look at that site I sent. Your competitor {{competitor}} has {{N}} reviews and a full website. Worth comparing."
