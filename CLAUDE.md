@@ -6,11 +6,11 @@ B2B lead gen engine. Scraper kvalifikuje leadove, Claude Code obradjuje per-lead
 
 1. Clone repo
 2. `cp env.example .env` and fill in your API keys
-3. `pip install -r requirements.txt`
+3. Pripremi `.venv` izabranim projektnim interpreterom, pa pokreni `.venv/bin/python -m pip install -r requirements.txt`.
 4. Copy `playbooks/_template.json` to `playbooks/{niche}-{country}.json`, fill in your niche
 5. Create output dirs: `mkdir -p ~/Documents/money-maker/leads/`
 6. Create deploy repo: `mkdir ~/Documents/mm-demos && cd ~/Documents/mm-demos && git init`
-7. Run: `make scrape PLAYBOOK=playbooks/{your-playbook}.json`
+7. Run: `.venv/bin/python scraper.py --playbook playbooks/{your-playbook}.json`
 
 ### API Keys
 
@@ -63,7 +63,7 @@ Each niche+country = one JSON file in `playbooks/`. Template: `playbooks/_templa
 To add a new niche:
 1. Copy `_template.json` to `{niche}-{country}.json`
 2. Fill in: cities, search queries, specialty map, i18n, image map, trade_terms
-3. Run: `make scrape PLAYBOOK=playbooks/{file}.json`
+3. Run: `.venv/bin/python scraper.py --playbook playbooks/{file}.json`
 
 ## Workflow
 
@@ -90,7 +90,7 @@ Results go into playbook `niche_intelligence` section. Never ask user, populate 
 
 ### Step 1: Scrape (automated)
 ```
-make scrape PLAYBOOK=playbooks/tiler-au.json
+.venv/bin/python scraper.py --playbook playbooks/tiler-au.json
 ```
 
 Scraper runs Google Places API, checks site quality (12 signals), scores leads, pulls SerpApi reviews for HOT+WARM (graceful fallback if quota exhausted), saves to folders: HOT/, WARM/, COOL/.
@@ -246,5 +246,5 @@ Live: https://nikola2111991.github.io/mm-demos/[slug]/
 ## Testing
 
 ```bash
-python3 -m pytest test_scoring.py test_research.py test_render.py test_pipeline.py -v
+.venv/bin/python -m pytest test_*.py -q
 ```
